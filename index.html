@@ -2267,7 +2267,7 @@ function _spendItemHtml(s){
 function _wishItemHtml(w,bal,accId){
   const pct=Math.min(100,bal>0?Math.round(bal/w.target*100):0);
   const achieved=bal>=w.target;
-  const safe=w.name.replace(/'/g,''');
+  const safe=w.name.replace(/'/g,"&#39;");
   return `<div class="wi-swipe-item" id="item-${w.id}">
     <div class="w-edit-bg"><button class="w-edit-confirm" onclick="openEditWish('${w.id}')">編輯</button></div>
     <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteWish('${w.id}')">刪除</button></div>
