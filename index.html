@@ -524,6 +524,32 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .wi-pct-group{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .wi-advance-btn{background:transparent;color:var(--text3);font-size:10px;font-weight:600;padding:3px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:background 0.12s,transform 0.12s,border-color 0.12s;letter-spacing:0.2px;white-space:nowrap}
 .wi-advance-btn:active{background:var(--k50);border-color:var(--k300);transform:scale(0.92)}
+
+/* ── Wallet Summary Card ── */
+.wallet-summary-card{display:flex;flex-direction:column;background:linear-gradient(135deg,#0f1020 0%,#222440 100%);border-radius:var(--r);margin-bottom:12px;box-shadow:var(--sh-dark);animation:cardUp 0.3s cubic-bezier(.4,0,.2,1) both;overflow:hidden}
+.wsm-item{flex:1;text-align:center;padding:0 4px}
+.wsm-label{font-size:9px;font-weight:700;color:var(--k400);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:5px}
+.wsm-val{font-size:15px;font-weight:700;color:#f5f2ef;letter-spacing:-0.3px}
+.wsm-spend{color:#e08080}
+.wsm-avail{color:#80b8d0}
+.wsm-avail.neg{color:#e08080}
+.wsm-div{width:1px;background:rgba(255,255,255,0.1);margin:4px 0}
+
+/* ── Copy results button ── */
+.btn-copy-results{width:100%;padding:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.3px;align-items:center;justify-content:center;gap:6px;margin-top:8px;transition:background 0.15s,transform 0.12s,color 0.15s;display:none}
+.btn-copy-results.visible{display:flex}
+.btn-copy-results:active{transform:scale(0.98);background:var(--k50)}
+
+/* ── Confirm overlay ── */
+#confirm-overlay{position:fixed;inset:0;z-index:180;background:rgba(0,0,0,0);align-items:center;justify-content:center;padding:0 32px;display:none;transition:background 0.2s}
+#confirm-overlay.show{display:flex;background:rgba(0,0,0,0.5)}
+.confirm-box{background:var(--card);border-radius:18px;width:100%;max-width:320px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(0.92);transition:transform 0.25s cubic-bezier(.34,1.56,.64,1)}
+#confirm-overlay.show .confirm-box{transform:scale(1)}
+.confirm-btns{display:flex;border-top:1px solid var(--border);margin-top:16px}
+.confirm-btn{flex:1;padding:14px;background:none;border:none;font-size:15px;cursor:pointer;font-weight:500;transition:background 0.12s}
+.confirm-btn:active{background:var(--k50)}
+.confirm-btn.cancel{color:var(--text3);border-right:1px solid var(--border)}
+.confirm-btn.ok{color:#dc2626;font-weight:600}
 </style>
 </head>
 <body>
@@ -612,6 +638,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
           <div class="rrow sub accent-mus" id="row-music" style="display:none"><div><div class="rl">音樂投資</div><div class="rs" id="rs-music">—</div></div><div class="rv" id="r-music">—</div></div>
           <div class="rrow sub accent-eng" id="row-eng" style="display:none"><div><div class="rl">工程投資</div><div class="rs" id="rs-eng">—</div></div><div class="rv" id="r-eng">—</div></div>
         </div>
+        <button class="btn-copy-results" id="btn-copy-results" onclick="copyResults()">
+          <svg viewBox="0 0 18 18" fill="none" width="14" height="14"><rect x="6" y="6" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M4 12H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          複製分配結果
+        </button>
         <div class="sec">轉帳步驟</div>
         <div class="steps-card"><div id="steps"><div class="hint">輸入金額後顯示</div></div></div>
         <button class="btn-confirm" id="btn-confirm" onclick="confirmSave()">
@@ -641,7 +671,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         <div class="type-list" id="type-breakdown"><div class="no-data">尚無紀錄</div></div>
         <div class="sec">帳戶累計分配</div>
         <div class="alloc-card" id="alloc-list"><div class="no-data">尚無紀錄</div></div>
-        <div class="sec">記錄明細</div>
+        <div class="sec" style="display:flex;align-items:center;justify-content:space-between"><span>記錄明細</span><button id="btn-expand-all" onclick="toggleExpandAll()" style="font-size:9px;font-weight:700;color:var(--label);background:none;border:none;cursor:pointer;letter-spacing:0.5px;text-transform:uppercase;padding:2px 0;-webkit-tap-highlight-color:transparent">展開全部</button></div>
         <div class="rec-list" id="rec-list"><div class="no-data">尚無紀錄</div></div>
         <div class="sec">資料轉移</div>
         <div class="transfer-card">
@@ -663,6 +693,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       <!-- 資金頁 -->
       <div class="page" id="page-wallet">
         <div class="sec" style="margin-top:2px">資金</div>
+        <div id="wallet-summary-wrap"></div>
         <div id="wallet-cards"></div>
         <div style="height:8px"></div>
       </div>
@@ -728,6 +759,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       </div>
       <div id="add-spend-fields">
         <div class="ws-field" style="margin-top:14px">
+          <div class="ws-label">日期</div>
+          <input type="date" class="ws-input" id="add-spend-date">
+        </div>
+        <div class="ws-field">
           <div class="ws-label">金額</div>
           <input type="number" inputmode="numeric" class="ws-input" id="add-spend-amt" placeholder="0">
         </div>
@@ -817,6 +852,39 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         <input type="number" inputmode="numeric" class="ws-input" id="edit-rec-amt" placeholder="0">
       </div>
       <button class="ws-confirm" onclick="confirmEditRecord()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 部分支出 bottom sheet ── -->
+<div id="partial-spend-sheet" class="wallet-sheet gone hiding" onclick="closeSheet('partial-spend-sheet')">
+  <div class="ws-panel" onclick="event.stopPropagation()">
+    <div class="ws-nav">
+      <button class="ws-close" onclick="closeSheet('partial-spend-sheet')">取消</button>
+      <div class="ws-title" id="partial-sheet-title">記錄支出</div>
+      <div style="min-width:48px"></div>
+    </div>
+    <div class="ws-body">
+      <div class="ws-field">
+        <div class="ws-label">金額</div>
+        <input type="number" inputmode="numeric" class="ws-input" id="partial-spend-amt" placeholder="0">
+      </div>
+      <div id="partial-spend-hint" style="font-size:12px;color:var(--label);margin:-6px 0 12px;padding:0 2px"></div>
+      <button class="ws-confirm" onclick="confirmPartialSpend()">確認記錄</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 確認 Dialog ── -->
+<div id="confirm-overlay" onclick="closeConfirmDialog()">
+  <div class="confirm-box" onclick="event.stopPropagation()">
+    <div style="padding:24px 20px 8px;text-align:center">
+      <div id="confirm-title" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px">確認</div>
+      <div id="confirm-msg" style="font-size:14px;color:var(--text3);line-height:1.5"></div>
+    </div>
+    <div class="confirm-btns">
+      <button class="confirm-btn cancel" onclick="closeConfirmDialog()">取消</button>
+      <button class="confirm-btn ok" onclick="doConfirm()">確認</button>
     </div>
   </div>
 </div>
@@ -1106,8 +1174,10 @@ function startFirestoreSync() {
   _unsubFirestore = db.collection('users').doc(currentUser.uid)
     .onSnapshot(doc => {
       if (doc.exists) {
-        const remote = doc.data().records || [];
-        saveLocalRecords(remote);
+        const d = doc.data();
+        saveLocalRecords(d.records || []);
+        if (d.spending) saveLocalSpending(d.spending);
+        if (d.wishes)   saveLocalWishes(d.wishes);
         if(currentTab==='analysis') renderAnalysis();
         if(currentTab==='wallet') renderWallet();
       }
@@ -1117,16 +1187,23 @@ function startFirestoreSync() {
 function stopFirestoreSync() {
   if (_unsubFirestore) { _unsubFirestore(); _unsubFirestore = null; }
 }
-async function pushToFirestore(records) {
+let _pushTimer = null;
+async function pushToFirestore() {
   if (!currentUser) return;
-  setSyncStatus('syncing');
-  try {
-    await db.collection('users').doc(currentUser.uid).set({
-      records,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    setSyncStatus('synced');
-  } catch { setSyncStatus('offline'); }
+  // debounce: wait 600ms after last save before actually writing
+  clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(async () => {
+    setSyncStatus('syncing');
+    try {
+      await db.collection('users').doc(currentUser.uid).set({
+        records:  getRecords(),
+        spending: getSpending(),
+        wishes:   getWishes(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      setSyncStatus('synced');
+    } catch { setSyncStatus('offline'); }
+  }, 600);
 }
 
 // ══ Records ══
@@ -1138,7 +1215,7 @@ function saveLocalRecords(records) {
 }
 function saveRecords(records) {
   saveLocalRecords(records);
-  pushToFirestore(records);
+  pushToFirestore();
 }
 
 // ══ Animated number ══
@@ -1291,10 +1368,16 @@ function delEntry(id) {
   },180);
 }
 function resetAll() {
+  const hasData = Object.values(data).some(e => e.amount > 0);
+  if (!hasData) { _doReset(); return; }
+  openConfirmDialog('重設計算頁？', '所有未儲存的收入輸入將被清除。', _doReset);
+}
+function _doReset() {
   Object.keys(data).forEach(k=>delete data[k]);
   document.getElementById('entries').innerHTML='';
   eid=0; sessionId=`s${Date.now()}`;
   document.getElementById('btn-confirm').classList.remove('visible','done');
+  document.getElementById('btn-copy-results').classList.remove('visible');
   addEntry();
 }
 function setSrc(id,v,btn){data[id].source=v;btn.closest('.seg').querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');calc()}
@@ -1316,9 +1399,12 @@ function calc() {
     document.getElementById('steps').innerHTML='<div class="hint">輸入金額後顯示</div>';
     document.getElementById('row-music').style.display='none';
     document.getElementById('row-eng').style.display='none';
-    btn.classList.remove('visible','done'); return;
+    btn.classList.remove('visible','done');
+    document.getElementById('btn-copy-results').classList.remove('visible');
+    return;
   }
   btn.classList.add('visible'); btn.classList.remove('done');
+  document.getElementById('btn-copy-results').classList.add('visible');
   popTotalValue();
   const each=total*0.1, myway=total*0.7;
   const musicAmt=list.filter(e=>e.type==='music').reduce((s,e)=>s+e.amount,0)*0.1;
@@ -1349,6 +1435,7 @@ function calc() {
 // ══ Tabs ══
 let currentTab = 'calc';
 function showTab(tab){
+  if (navigator.vibrate) navigator.vibrate(6);
   currentTab = tab;
   const pct = tab==='wallet' ? '-66.666%' : tab==='analysis' ? '-33.333%' : '0';
   document.getElementById('pages-track').style.transform=`translateX(${pct})`;
@@ -1395,6 +1482,7 @@ function renderAnalysis(){
   renderChart(monthly,monthlyMusic,monthlyEng); renderTypeBreakdown(T); renderAlloc(T); renderRecordHistory(records);
 }
 const CHART_LEGEND=`<div style="display:flex;gap:14px;justify-content:center;margin-top:8px"><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k800)"></span>音樂</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#5a5c78"></span>工程</span></div>`;
+const CHART_LEGEND_V2=`<div style="display:flex;gap:12px;justify-content:center;margin-top:8px"><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k800)"></span>音樂</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#5a5c78"></span>工程</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k200)"></span>其他</span></div>`;
 const CHART_LBLS=['1','2','3','4','5','6','7','8','9','10','11','12'];
 
 function renderChart(monthly,monthlyMusic,monthlyEng){
@@ -1406,15 +1494,26 @@ function renderChart(monthly,monthlyMusic,monthlyEng){
 
 function renderBarChart(monthly,monthlyMusic,monthlyEng){
   const max=Math.max(...monthly,1);
+  const now=new Date(), curMonth=now.getMonth(), curYear=now.getFullYear();
+  const isCurrentYear=(currentYear===curYear);
   const bars=CHART_LBLS.map((l,i)=>{
-    if(monthly[i]===0) return `<div class="chart-col"><div class="chart-bar empty" style="height:8px"></div><div class="chart-lbl">${l}</div></div>`;
-    const hM=monthlyMusic[i]>0?Math.max(Math.round(monthlyMusic[i]/max*60),4):0;
-    const hE=monthlyEng[i]>0?Math.max(Math.round(monthlyEng[i]/max*60),4):0;
-    return `<div class="chart-col"><div style="display:flex;align-items:flex-end;gap:1px;width:100%"><div style="flex:1;height:${hM}px;background:var(--k800);border-radius:2px 2px 0 0;opacity:${hM?1:0}"></div><div style="flex:1;height:${hE}px;background:#5a5c78;border-radius:2px 2px 0 0;opacity:${hE?1:0}"></div></div><div class="chart-lbl">${l}</div></div>`;
+    const isCur=isCurrentYear&&i===curMonth;
+    const lblStyle=isCur?'color:var(--text3);font-weight:700':'';
+    if(monthly[i]===0) return `<div class="chart-col"><div class="chart-bar empty" style="height:4px;opacity:0.4"></div><div class="chart-lbl" style="${lblStyle}">${l}</div></div>`;
+    const totalH=Math.max(Math.round(monthly[i]/max*60),4);
+    const mH=monthlyMusic[i]>0?Math.max(Math.round(monthlyMusic[i]/monthly[i]*totalH),2):0;
+    const eH=monthlyEng[i]>0?Math.max(Math.round(monthlyEng[i]/monthly[i]*totalH),2):0;
+    const oH=Math.max(0,totalH-mH-eH);
+    const segs=[
+      mH?`<div style="height:${mH}px;background:var(--k800);border-radius:${!eH&&!oH?'3px 3px 0 0':'0'}"></div>`:'',
+      eH?`<div style="height:${eH}px;background:#5a5c78;border-radius:${!mH?'3px 3px 0 0':'0'}"></div>`:'',
+      oH?`<div style="height:${oH}px;background:${isCur?'var(--k400)':'var(--k200)'};border-radius:${!mH&&!eH?'3px 3px 0 0':'0'}"></div>`:'',
+    ].join('');
+    return `<div class="chart-col"><div style="width:100%;height:${totalH}px;display:flex;flex-direction:column">${segs}</div><div class="chart-lbl" style="${lblStyle}">${l}</div></div>`;
   }).join('');
   const el=document.getElementById('monthly-chart');
   el.style.cssText='display:block';
-  el.innerHTML=`<div style="display:flex;align-items:flex-end;gap:2px;height:74px">${bars}</div>${CHART_LEGEND}`;
+  el.innerHTML=`<div style="display:flex;align-items:flex-end;gap:2px;height:74px">${bars}</div>${CHART_LEGEND_V2}`;
 }
 
 function renderLineChart(monthly,monthlyMusic,monthlyEng){
@@ -1657,9 +1756,11 @@ const ACCOUNTS = [
 ];
 
 function getSpending(){ try{return JSON.parse(localStorage.getItem(SPEND_KEY)||'[]');}catch{return[];} }
-function saveSpending(list){ try{localStorage.setItem(SPEND_KEY,JSON.stringify(list));}catch{} }
+function saveLocalSpending(list){ try{localStorage.setItem(SPEND_KEY,JSON.stringify(list));}catch{} }
+function saveSpending(list){ saveLocalSpending(list); pushToFirestore(); }
 function getWishes(){ try{return JSON.parse(localStorage.getItem(WISH_KEY)||'[]');}catch{return[];} }
-function saveWishes(list){ try{localStorage.setItem(WISH_KEY,JSON.stringify(list));}catch{} }
+function saveLocalWishes(list){ try{localStorage.setItem(WISH_KEY,JSON.stringify(list));}catch{} }
+function saveWishes(list){ saveLocalWishes(list); pushToFirestore(); }
 
 function computeBalances(){
   const records=getRecords(), spending=getSpending();
@@ -1693,6 +1794,8 @@ function openAddSheet(accountId){
   ['add-spend-amt','add-spend-note','add-wish-name','add-wish-amt'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
+  const dateEl=document.getElementById('add-spend-date');
+  if(dateEl) dateEl.value=new Date().toISOString().slice(0,10);
   // sync account chips
   document.querySelectorAll('.ws-acc-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.account===_addSheetAccount);
@@ -1729,8 +1832,9 @@ function confirmAdd(){
     const amt=parseFloat(document.getElementById('add-spend-amt').value)||0;
     if(amt<=0||!_addSheetAccount)return;
     const note=document.getElementById('add-spend-note').value.trim();
+    const date=document.getElementById('add-spend-date').value||new Date().toISOString().slice(0,10);
     const list=getSpending();
-    list.push({id:`sp${Date.now()}`,account:_addSheetAccount,amount:amt,note,date:new Date().toISOString().slice(0,10)});
+    list.push({id:`sp${Date.now()}`,account:_addSheetAccount,amount:amt,note,date});
     saveSpending(list);
   } else {
     const name=document.getElementById('add-wish-name').value.trim();
@@ -1744,12 +1848,28 @@ function confirmAdd(){
   renderWallet();
 }
 
-// ── Purchase wish → auto-create spending ──
-function purchaseWish(wishId,accountId,amount,name){
+// ── Partial / full wish purchase ──
+let _partialWish=null;
+function openPartialSpend(wishId,accountId,target,name,currentBal,defaultAmt,deletesWish){
+  _partialWish={wishId,accountId,target,name,deletesWish};
+  document.getElementById('partial-sheet-title').textContent=deletesWish?`購買：${name}`:`預支：${name}`;
+  document.getElementById('partial-spend-amt').value=defaultAmt>0?defaultAmt:'';
+  document.getElementById('partial-spend-hint').textContent=`目標 ${fmt(target)}，帳戶餘額 ${fmt(currentBal)}`;
+  showSheet('partial-spend-sheet');
+  setTimeout(()=>document.getElementById('partial-spend-amt').focus(),450);
+}
+function confirmPartialSpend(){
+  if(!_partialWish)return;
+  const amt=parseFloat(document.getElementById('partial-spend-amt').value)||0;
+  if(amt<=0)return;
   const list=getSpending();
-  list.push({id:`sp${Date.now()}`,account:accountId,amount,note:name,date:new Date().toISOString().slice(0,10)});
+  list.push({id:`sp${Date.now()}`,account:_partialWish.accountId,amount:amt,note:_partialWish.name,date:new Date().toISOString().slice(0,10)});
   saveSpending(list);
-  saveWishes(getWishes().filter(w=>w.id!==wishId));
+  if(_partialWish.deletesWish){
+    saveWishes(getWishes().filter(w=>w.id!==_partialWish.wishId));
+  }
+  _partialWish=null;
+  closeSheet('partial-spend-sheet');
   renderWallet();
 }
 
@@ -1945,6 +2065,38 @@ function renderWallet(){
   const el=document.getElementById('wallet-cards');
   if(!el)return;
 
+  // ── Summary card ──
+  const records=getRecords();
+  const totalIncome=records.reduce((s,r)=>s+r.total,0);
+  const totalSpent=spending.reduce((s,sp)=>s+sp.amount,0);
+  const totalAvail=Object.values(balances).reduce((s,v)=>s+v,0);
+  const thisYear=new Date().getFullYear().toString();
+  const yearIncome=records.filter(r=>r.date.startsWith(thisYear)).reduce((s,r)=>s+r.total,0);
+  const yearSpent=spending.filter(sp=>sp.date.startsWith(thisYear)).reduce((s,sp)=>s+sp.amount,0);
+  const yearNet=yearIncome-yearSpent;
+  const sumEl=document.getElementById('wallet-summary-wrap');
+  if(sumEl){
+    sumEl.innerHTML=totalIncome>0
+      ?`<div class="wallet-summary-card">
+          <div style="display:flex;padding:13px 8px">
+            <div class="wsm-item"><div class="wsm-label">累計分配</div><div class="wsm-val">${fmt(totalIncome)}</div></div>
+            <div class="wsm-div"></div>
+            <div class="wsm-item"><div class="wsm-label">已支出</div><div class="wsm-val wsm-spend">${fmt(totalSpent)}</div></div>
+            <div class="wsm-div"></div>
+            <div class="wsm-item"><div class="wsm-label">可用餘額</div><div class="wsm-val wsm-avail${totalAvail<0?' neg':''}">${fmt(totalAvail)}</div></div>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.09);display:flex;align-items:center;padding:9px 8px;gap:4px">
+            <span style="font-size:9px;font-weight:700;color:var(--k500);letter-spacing:0.4px;white-space:nowrap;padding-left:4px;margin-right:2px">${thisYear}年</span>
+            <div class="wsm-item"><div class="wsm-label" style="font-size:8px">本年收入</div><div class="wsm-val" style="font-size:13px">${fmt(yearIncome)}</div></div>
+            <div class="wsm-div"></div>
+            <div class="wsm-item"><div class="wsm-label" style="font-size:8px">本年支出</div><div class="wsm-val wsm-spend" style="font-size:13px">${fmt(yearSpent)}</div></div>
+            <div class="wsm-div"></div>
+            <div class="wsm-item"><div class="wsm-label" style="font-size:8px">本年淨增</div><div class="wsm-val ${yearNet>=0?'wsm-avail':'wsm-spend'}" style="font-size:13px">${fmt(yearNet)}</div></div>
+          </div>
+        </div>`
+      :'';
+  }
+
   el.innerHTML=ACCOUNTS.map(acc=>{
     const bal=balances[acc.id]||0;
     const accSpend=spending.filter(s=>s.account===acc.id).sort((a,b)=>b.date.localeCompare(a.date));
@@ -2008,8 +2160,8 @@ function renderWallet(){
                   <div class="wi-meta">
                     <span class="wi-progress-label">${fmt(Math.min(bal,w.target))} / ${fmt(w.target)}</span>
                     ${achieved
-                      ? `<button class="wi-buy-btn" onclick="event.stopPropagation();purchaseWish('${w.id}','${acc.id}',${w.target},'${w.name.replace(/'/g,'\\u0027')}')">購買 →</button>`
-                      : `<span class="wi-pct-group"><span class="wi-pct">${pct}%</span><button class="wi-advance-btn" onclick="event.stopPropagation();purchaseWish('${w.id}','${acc.id}',${w.target},'${w.name.replace(/'/g,'\\u0027')}')">預支</button></span>`}
+                      ? `<button class="wi-buy-btn" onclick="event.stopPropagation();openPartialSpend('${w.id}','${acc.id}',${w.target},'${w.name.replace(/'/g,'\\u0027')}',${bal},${w.target},true)">購買 →</button>`
+                      : `<span class="wi-pct-group"><span class="wi-pct">${pct}%</span><button class="wi-advance-btn" onclick="event.stopPropagation();openPartialSpend('${w.id}','${acc.id}',${w.target},'${w.name.replace(/'/g,'\\u0027')}',${bal},0,false)">預支</button></span>`}
                   </div>
                   <div class="wish-track"><div class="wish-fill${achieved?' full':''}" style="width:${pct}%"></div></div>
                 </div>
@@ -2065,6 +2217,70 @@ function renderWallet(){
   });
 }
 
+// ── Copy results ──
+function copyResults(){
+  const list=Object.values(data).filter(e=>e.amount>0);
+  if(!list.length)return;
+  const total=list.reduce((s,e)=>s+e.amount,0);
+  const each=total*0.1;
+  const myway=total*0.7;
+  const musicAmt=list.filter(e=>e.type==='music').reduce((s,e)=>s+e.amount,0)*0.1;
+  const engAmt=list.filter(e=>e.type==='engineering').reduce((s,e)=>s+e.amount,0)*0.1;
+  let lines=['📊 收入分配結果','─────────────',`💳 中信 My Way：${fmt(myway)}`,`📈 國泰 投資帳戶：${fmt(each)}`,`🎯 個人投資：${fmt(each)}`];
+  if(musicAmt>0) lines.push(`🎵 音樂投資：${fmt(musicAmt)}`);
+  if(engAmt>0)   lines.push(`⚙️ 工程投資：${fmt(engAmt)}`);
+  lines.push('─────────────',`總計：${fmt(total)}`);
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+    const btn=document.getElementById('btn-copy-results');
+    const prev=btn.innerHTML;
+    btn.innerHTML='<svg viewBox="0 0 18 18" fill="none" width="14" height="14"><polyline points="3,9 7,13 15,5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> 已複製！';
+    btn.style.color='var(--k700)';
+    setTimeout(()=>{btn.innerHTML=prev;btn.style.color='';},2000);
+  }).catch(()=>{});
+}
+
+// ── Expand / collapse all records ──
+let _allRecordsExpanded=false;
+function toggleExpandAll(){
+  _allRecordsExpanded=!_allRecordsExpanded;
+  document.querySelectorAll('.dg-body').forEach(b=>{
+    _allRecordsExpanded?b.classList.add('open'):b.classList.remove('open');
+  });
+  document.querySelectorAll('.dg-arrow').forEach(a=>{
+    _allRecordsExpanded?a.classList.add('open'):a.classList.remove('open');
+  });
+  const btn=document.getElementById('btn-expand-all');
+  if(btn) btn.textContent=_allRecordsExpanded?'收起全部':'展開全部';
+}
+
+// ── Confirm dialog ──
+let _confirmCallback=null;
+function openConfirmDialog(title,msg,onConfirm){
+  _confirmCallback=onConfirm;
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+function closeConfirmDialog(){
+  document.getElementById('confirm-overlay').classList.remove('show');
+  _confirmCallback=null;
+}
+function doConfirm(){
+  const cb=_confirmCallback;
+  closeConfirmDialog();
+  if(cb) cb();
+}
+
+// ── Keyboard avoidance for bottom sheets ──
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',()=>{
+    const kb=Math.max(0,window.innerHeight-window.visualViewport.height);
+    document.querySelectorAll('.ws-panel,.settings-panel').forEach(p=>{
+      p.style.paddingBottom=kb>80?`${kb}px`:'';
+    });
+  });
+}
+
 window.addEventListener('load',()=>{
   const p=getPrefs();
   applyTheme(p.theme||'cool');
@@ -2077,7 +2293,7 @@ window.addEventListener('load',()=>{
   // Ripple on static interactive elements
   const fab=document.getElementById('fab-add');
   if(fab) fab.addEventListener('touchstart',e=>addRipple(fab,e),{passive:true});
-  ['.btn-add','.btn-confirm','.year-btn','.nav-reset','.btn-google','.btn-dismiss','.btn-transfer','.settings-close-btn','.tab','.ws-confirm','.ws-close','.ws-acc-btn'].forEach(sel=>{
+  ['.btn-add','.btn-confirm','.btn-copy-results','.year-btn','.nav-reset','.btn-google','.btn-dismiss','.btn-transfer','.settings-close-btn','.tab','.ws-confirm','.ws-close','.ws-acc-btn','.confirm-btn'].forEach(sel=>{
     document.querySelectorAll(sel).forEach(el=>{
       el.addEventListener('touchstart',e=>addRipple(el,e),{passive:true});
     });
