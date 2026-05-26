@@ -249,8 +249,8 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .rec-list{} /* plain container — each date-group is its own card */
 .date-group{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:8px;box-shadow:var(--sh)}
 .date-group:last-child{margin-bottom:0}
-.dg-header{display:flex;align-items:center;padding:13px 16px;cursor:pointer;gap:10px;transition:background 0.15s;-webkit-tap-highlight-color:transparent}
-.dg-header:active{background:var(--k50)}
+.dg-header{display:flex;align-items:center;padding:13px 16px;cursor:pointer;gap:10px;transition:background 0.12s,transform 0.12s;-webkit-tap-highlight-color:transparent}
+.dg-header:active{background:var(--k50);transform:scale(0.985)}
 .dg-date-col{flex:1;min-width:0}
 .dg-date{font-size:13px;font-weight:600;color:var(--text2)}
 .dg-count-tag{font-size:10px;color:var(--label);margin-top:2px;letter-spacing:0.2px}
@@ -276,7 +276,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .w-edit-confirm,.r-edit-confirm{background:transparent;border:none;color:#fff;font-size:13px;font-weight:600;cursor:pointer;width:100%;height:100%;padding:0}
 .rec-del-confirm{color:white;font-size:13px;font-weight:700;letter-spacing:0.3px;background:none;border:none;cursor:pointer;width:100%;height:100%;padding:0}
 .rec-swipe-row{position:relative;background:var(--card);z-index:1;display:flex;align-items:center;padding:12px 16px;will-change:transform}
-.rec-swipe-row.snapping{transition:transform 0.32s cubic-bezier(.4,0,.2,1)}
+.rec-swipe-row.snapping{transition:transform 0.3s cubic-bezier(.34,1.15,.64,1)}
 .rec-tags{margin-top:5px}
 
 /* ── Transfer ── */
@@ -414,14 +414,14 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .wallet-card:nth-child(5){animation-delay:240ms}
 
 /* Card header (clickable, collapses body) */
-.wc-header{display:flex;align-items:stretch;border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.15s}
-.wc-header:active{background:var(--k50)}
+.wc-header{display:flex;align-items:stretch;border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.12s,transform 0.12s}
+.wc-header:active{background:var(--k50);transform:scale(0.985)}
 .wc-accent{width:4px;flex-shrink:0}
 .wc-info{flex:1;padding:14px 16px}
 .wc-name{font-size:11px;font-weight:700;color:var(--label);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:4px}
 .wc-bal{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-0.8px}
 .wc-bal.negative{color:#dc2626}
-.wc-chevron{font-size:20px;color:var(--k300);display:flex;align-items:center;padding-right:16px;transition:transform 0.3s cubic-bezier(.34,1.2,.64,1)}
+.wc-chevron{font-size:20px;color:var(--k300);display:flex;align-items:center;padding-right:16px;transition:transform 0.32s cubic-bezier(.34,1.56,.64,1)}
 .wc-chevron.open{transform:rotate(90deg)}
 
 /* Card body collapse */
@@ -431,10 +431,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 /* Section headers (collapsible) */
 .wc-section{border-bottom:1px solid var(--border)}
 .wc-section:last-child{border-bottom:none}
-.wc-sec-header{display:flex;align-items:center;padding:11px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.15s;gap:8px}
-.wc-sec-header:active{background:var(--k50)}
+.wc-sec-header{display:flex;align-items:center;padding:11px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.12s,transform 0.12s;gap:8px}
+.wc-sec-header:active{background:var(--k50);transform:scale(0.98)}
 .wc-sec-label{font-size:10px;font-weight:700;color:var(--label);letter-spacing:0.6px;text-transform:uppercase;flex:1}
-.wc-sec-arrow{font-size:14px;color:var(--k300);transition:transform 0.28s cubic-bezier(.34,1.2,.64,1);display:inline-block;line-height:1}
+.wc-sec-arrow{font-size:14px;color:var(--k300);transition:transform 0.3s cubic-bezier(.34,1.56,.64,1);display:inline-block;line-height:1}
 .wc-sec-arrow.open{transform:rotate(90deg)}
 .wc-sec-body{overflow:hidden;max-height:0;transition:max-height 0.42s cubic-bezier(.34,1.1,.64,1)}
 .wc-sec-body.open{max-height:3000px}
@@ -446,8 +446,8 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 /* Year groups inside spending */
 .sp-year-group{border-bottom:1px solid var(--border)}
 .sp-year-group:last-of-type{border-bottom:none}
-.sp-year-header{display:flex;align-items:center;padding:9px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.15s;gap:8px}
-.sp-year-header:active{background:var(--k50)}
+.sp-year-header{display:flex;align-items:center;padding:9px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.12s,transform 0.12s;gap:8px}
+.sp-year-header:active{background:var(--k50);transform:scale(0.98)}
 .sp-year-label{font-size:12px;font-weight:600;color:var(--text2)}
 .sp-year-count{font-size:10px;color:var(--label);margin-top:1px}
 .sp-year-total{font-size:13px;font-weight:700;color:#dc2626;flex-shrink:0}
@@ -460,7 +460,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .sp-swipe-item{position:relative;overflow:hidden}
 .sp-swipe-item:not(:last-child){border-bottom:1px solid var(--border)}
 .sp-row{position:relative;background:var(--card);z-index:1;display:flex;align-items:center;padding:10px 0;will-change:transform}
-.sp-row.snapping{transition:transform 0.32s cubic-bezier(.4,0,.2,1)}
+.sp-row.snapping{transition:transform 0.3s cubic-bezier(.34,1.15,.64,1)}
 .si-left{flex:1;min-width:0}
 .si-note{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .si-date{font-size:10px;color:var(--label)}
@@ -471,10 +471,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .wi-swipe-item{position:relative;overflow:hidden}
 .wi-swipe-item:not(:last-child){border-bottom:1px solid var(--border)}
 .wi-row{position:relative;background:var(--card);z-index:1;display:flex;align-items:flex-start;padding:11px 0;will-change:transform}
-.wi-row.snapping{transition:transform 0.32s cubic-bezier(.4,0,.2,1)}
+.wi-row.snapping{transition:transform 0.3s cubic-bezier(.34,1.15,.64,1)}
 .wi-content{flex:1;min-width:0}
 .wi-name{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:5px;line-height:1.4}
-.wi-badge{display:inline-block;background:var(--k900);color:#f5f2ef;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;letter-spacing:0.2px;vertical-align:middle;animation:badgePop 0.4s cubic-bezier(.34,1.56,.64,1)}
+.wi-badge{display:inline-block;background:transparent;color:var(--k700);font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:5px;letter-spacing:0.6px;vertical-align:middle;border:1px solid var(--k300);text-transform:uppercase;animation:badgePop 0.35s cubic-bezier(.34,1.56,.64,1)}
 @keyframes badgePop{from{transform:scale(0);opacity:0}60%{transform:scale(1.1)}to{transform:scale(1);opacity:1}}
 .wi-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .wi-progress-label{font-size:10px;color:var(--label)}
@@ -514,11 +514,16 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 
 
 /* ── Achievement hint on collapsed header ── */
-.wc-achieve-hint{font-size:10px;color:var(--k900);font-weight:700;margin-top:3px;letter-spacing:0.2px}
+.wc-achieve-hint{display:flex;align-items:center;gap:4px;margin-top:4px}
+.wc-achieve-dot{width:5px;height:5px;border-radius:50%;background:var(--k700);flex-shrink:0}
+.wc-achieve-label{font-size:9px;font-weight:700;color:var(--k700);letter-spacing:0.6px;text-transform:uppercase}
 
-/* ── Purchase button ── */
+/* ── Purchase / advance buttons ── */
 .wi-buy-btn{background:var(--k900);color:#f5f2ef;font-size:11px;font-weight:700;padding:4px 10px;border:none;border-radius:8px;cursor:pointer;transition:transform 0.12s;letter-spacing:0.2px;white-space:nowrap;flex-shrink:0}
 .wi-buy-btn:active{transform:scale(0.92)}
+.wi-pct-group{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.wi-advance-btn{background:transparent;color:var(--text3);font-size:10px;font-weight:600;padding:3px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:background 0.12s,transform 0.12s,border-color 0.12s;letter-spacing:0.2px;white-space:nowrap}
+.wi-advance-btn:active{background:var(--k50);border-color:var(--k300);transform:scale(0.92)}
 </style>
 </head>
 <body>
@@ -1993,12 +1998,12 @@ function renderWallet(){
               <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteWish('${w.id}')">刪除</button></div>
               <div class="wi-row" id="wsr-${w.id}">
                 <div class="wi-content">
-                  <div class="wi-name">${w.name}${achieved?'<span class="wi-badge">可以買了！🎉</span>':''}</div>
+                  <div class="wi-name">${w.name}${achieved?'<span class="wi-badge">Ready</span>':''}</div>
                   <div class="wi-meta">
                     <span class="wi-progress-label">${fmt(Math.min(bal,w.target))} / ${fmt(w.target)}</span>
                     ${achieved
                       ? `<button class="wi-buy-btn" onclick="event.stopPropagation();purchaseWish('${w.id}','${acc.id}',${w.target},'${w.name.replace(/'/g,'\\u0027')}')">購買 →</button>`
-                      : `<span class="wi-pct">${pct}%</span>`}
+                      : `<span class="wi-pct-group"><span class="wi-pct">${pct}%</span><button class="wi-advance-btn" onclick="event.stopPropagation();purchaseWish('${w.id}','${acc.id}',${w.target},'${w.name.replace(/'/g,'\\u0027')}')">預支</button></span>`}
                   </div>
                   <div class="wish-track"><div class="wish-fill${achieved?' full':''}" style="width:${pct}%"></div></div>
                 </div>
@@ -2017,7 +2022,7 @@ function renderWallet(){
           <div class="wc-info">
             <div class="wc-name">${acc.icon} ${acc.name}</div>
             <div class="wc-bal${bal<0?' negative':''}">${fmt(bal)}</div>
-            ${hasAchieved?'<div class="wc-achieve-hint">🎉 有願望已達標</div>':''}
+            ${hasAchieved?'<div class="wc-achieve-hint"><span class="wc-achieve-dot"></span><span class="wc-achieve-label">可購買</span></div>':''}
           </div>
           <div class="wc-chevron${cardOpen?' open':''}" id="wchev-${acc.id}">›</div>
         </div>
