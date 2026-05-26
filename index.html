@@ -396,6 +396,12 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 /* ── Delete bounce ── */
 @keyframes deleteShrink{0%{opacity:1;transform:scaleY(1)}60%{opacity:0;transform:scaleY(0.8)}100%{opacity:0;max-height:0;transform:scaleY(0)}}
 
+/* ── Soft update: 抑制進場動畫（用於資料更新時的 re-render）── */
+.no-anim .wallet-card{animation:none!important}
+.no-anim .alloc-row{animation:none!important}
+.no-anim .sum-card{animation:none!important}
+#alloc-list.no-anim .alloc-row{animation:none!important}
+
 /* ── Total value pulse on update ── */
 @keyframes valuePop{0%{transform:scale(1)}35%{transform:scale(1.05)}100%{transform:scale(1)}}
 .total-bar .tv.popping{animation:valuePop 0.28s cubic-bezier(.34,1.56,.64,1)}
@@ -1382,7 +1388,12 @@ function _renderAnalysisStatsOnly(){
   document.getElementById('a-avg').textContent=activeMonths>0?fmt(T.total/activeMonths):'—';
   document.getElementById('a-active-months').textContent=`${activeMonths} 個月有收入`;
   renderChart(monthly,monthlyMusic,monthlyEng);
-  renderTypeBreakdown(T); renderAlloc(T);
+  renderTypeBreakdown(T);
+  // 抑制 alloc-row 進場動畫（避免更新時閃爍）
+  const allocEl=document.getElementById('alloc-list');
+  allocEl?.classList.add('no-anim');
+  renderAlloc(T);
+  requestAnimationFrame(()=>allocEl?.classList.remove('no-anim'));
 }
 
 // ══ Entries ══
@@ -1901,19 +1912,19 @@ function confirmAdd(){
     if(amt<=0||!_addSheetAccount)return;
     const note=document.getElementById('add-spend-note').value.trim();
     const date=document.getElementById('add-spend-date').value||new Date().toISOString().slice(0,10);
-    const list=getSpending();
-    list.push({id:`sp${Date.now()}`,account:_addSheetAccount,amount:amt,note,date});
-    saveSpending(list);
+    const newSpend={id:`sp${Date.now()}`,account:_addSheetAccount,amount:amt,note,date};
+    const list=getSpending(); list.push(newSpend); saveSpending(list);
+    closeSheet('add-sheet');
+    _insertSpendItem(newSpend);
   } else {
     const name=document.getElementById('add-wish-name').value.trim();
     const amt=parseFloat(document.getElementById('add-wish-amt').value)||0;
     if(!name||amt<=0||!_addSheetAccount)return;
-    const list=getWishes();
-    list.push({id:`wi${Date.now()}`,account:_addSheetAccount,name,target:amt});
-    saveWishes(list);
+    const newWish={id:`wi${Date.now()}`,account:_addSheetAccount,name,target:amt};
+    const list=getWishes(); list.push(newWish); saveWishes(list);
+    closeSheet('add-sheet');
+    _insertWishItem(newWish);
   }
-  closeSheet('add-sheet');
-  renderWallet();
 }
 
 // ── Partial / full wish purchase ──
@@ -1931,24 +1942,32 @@ function confirmPartialSpend(){
   const amt=parseFloat(document.getElementById('partial-spend-amt').value)||0;
   if(amt<=0)return;
 
-  // 先取出需要的值，再清空 _partialWish，避免任何 race condition
   const {wishId,accountId,name}=_partialWish;
   _partialWish=null;
 
-  // 記錄支出到 localStorage
-  const list=getSpending();
-  list.push({id:`sp${Date.now()}`,account:accountId,amount:amt,note:name,date:new Date().toISOString().slice(0,10)});
-  saveLocalSpending(list);
+  const newSpend={id:`sp${Date.now()}`,account:accountId,amount:amt,note:name,date:new Date().toISOString().slice(0,10)};
+  const list=getSpending(); list.push(newSpend); saveLocalSpending(list);
+  saveLocalWishes(getWishes().filter(w=>w.id!==wishId));
 
-  // 立即從本地移除願望（不管金額多少，確認就消失）
-  const updatedWishes=getWishes().filter(w=>w.id!==wishId);
-  saveLocalWishes(updatedWishes);
-
-  // 關閉 sheet 並立即 render（從 localStorage 讀，不等 Firestore）
   closeSheet('partial-spend-sheet');
-  renderWallet();
 
-  // 最後才推到 Firestore（非同步，不影響 UI）
+  // 動畫移除願望 → 完成後插入新支出
+  const wishItem=document.getElementById(`item-${wishId}`);
+  if(wishItem){
+    wishItem.style.transition='opacity 0.22s,max-height 0.32s 0.08s';
+    wishItem.style.overflow='hidden'; wishItem.style.opacity='0';
+    wishItem.style.maxHeight=wishItem.offsetHeight+'px';
+    setTimeout(()=>{wishItem.style.maxHeight='0';},60);
+    setTimeout(()=>{
+      wishItem.remove();
+      _patchWishSectionAfterDelete(accountId);
+      _insertSpendItem(newSpend);
+    },380);
+  } else {
+    _patchWishSectionAfterDelete(accountId);
+    _insertSpendItem(newSpend);
+  }
+
   pushToFirestore();
 }
 
@@ -1969,10 +1988,14 @@ function confirmEditSpend(){
   if(amt<=0||!_editSpendId)return;
   const note=document.getElementById('edit-spend-note').value.trim();
   const date=document.getElementById('edit-spend-date').value||new Date().toISOString().slice(0,10);
+  const oldSpend=getSpending().find(s=>s.id===_editSpendId);
   saveSpending(getSpending().map(s=>s.id===_editSpendId?{...s,amount:amt,note,date}:s));
+  const editedId=_editSpendId;
   _editSpendId=null;
   closeSheet('edit-spend-sheet');
-  renderWallet();
+  // 跨年份編輯：fallback 到無動畫 re-render；同年份：原地更新
+  if(oldSpend&&oldSpend.date.slice(0,4)!==date.slice(0,4)) _softRenderWallet();
+  else _updateSpendItemInPlace(editedId);
 }
 
 // ── Edit wish ──
@@ -1991,9 +2014,10 @@ function confirmEditWish(){
   const amt=parseFloat(document.getElementById('edit-wish-amt').value)||0;
   if(!name||amt<=0||!_editWishId)return;
   saveWishes(getWishes().map(w=>w.id===_editWishId?{...w,name,target:amt}:w));
+  const editedId=_editWishId;
   _editWishId=null;
   closeSheet('edit-wish-sheet');
-  renderWallet();
+  _updateWishItemInPlace(editedId);
 }
 
 // ── Edit record ──
@@ -2035,7 +2059,10 @@ function confirmEditRecord(){
   saveRecords(records);
   _editRecordId=null;
   closeSheet('edit-record-sheet');
-  renderAnalysis();
+  // rec-list 的 date-group 無 CSS 進場動畫，重建不會閃爍
+  const yr=getRecords().filter(r=>r.date.startsWith(String(currentYear)));
+  renderRecordHistory(yr);
+  _renderAnalysisStatsOnly();
 }
 
 // ── Wallet collapse state (closed = collapsed; cards start closed) ──
@@ -2217,6 +2244,164 @@ function _patchWishSectionAfterDelete(accountId){
     const secContent=document.querySelector(`#wsbody-${accountId}-wish .wc-sec-content`);
     if(secContent)secContent.innerHTML='<div class="wc-empty">尚無願望清單</div>';
   }
+}
+
+// ══════════════════════════════════════════════════════
+// ── 外科手術式 新增 / 編輯 helpers（不重建整頁 HTML）──
+// ══════════════════════════════════════════════════════
+
+function _spendItemHtml(s){
+  return `<div class="sp-swipe-item" id="item-${s.id}">
+    <div class="w-edit-bg"><button class="w-edit-confirm" onclick="openEditSpend('${s.id}')">編輯</button></div>
+    <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteSpend('${s.id}')">刪除</button></div>
+    <div class="sp-row" id="wsr-${s.id}">
+      <div class="si-left">
+        <div class="si-note">${s.note||'支出'}</div>
+        <div class="si-date">${s.date.slice(5,7)}月${s.date.slice(8,10)}日</div>
+      </div>
+      <div class="si-right"><span class="si-amt">-${fmt(s.amount)}</span></div>
+    </div>
+  </div>`;
+}
+
+function _wishItemHtml(w,bal,accId){
+  const pct=Math.min(100,bal>0?Math.round(bal/w.target*100):0);
+  const achieved=bal>=w.target;
+  const safe=w.name.replace(/'/g,''');
+  return `<div class="wi-swipe-item" id="item-${w.id}">
+    <div class="w-edit-bg"><button class="w-edit-confirm" onclick="openEditWish('${w.id}')">編輯</button></div>
+    <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteWish('${w.id}')">刪除</button></div>
+    <div class="wi-row" id="wsr-${w.id}">
+      <div class="wi-content">
+        <div class="wi-name" id="wi-name-${w.id}">${w.name}${achieved?'<span class="wi-badge">達標</span>':''}</div>
+        <div class="wi-meta">
+          <span class="wi-progress-label" id="wi-progress-${w.id}">${fmt(Math.min(bal,w.target))} / ${fmt(w.target)}</span>
+          ${achieved
+            ?`<button class="wi-buy-btn" onclick="event.stopPropagation();openPartialSpend('${w.id}','${accId}',${w.target},'${safe}',${bal},${w.target},true)">購買 →</button>`
+            :`<span class="wi-pct-group"><span class="wi-pct" id="wi-pct-${w.id}">${pct}%</span><button class="wi-advance-btn" onclick="event.stopPropagation();openPartialSpend('${w.id}','${accId}',${w.target},'${safe}',${bal},0,false)">預支</button></span>`}
+        </div>
+        <div class="wish-track"><div class="wish-fill${achieved?' full':''}" id="wi-fill-${w.id}" style="width:${pct}%"></div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function _animateInsert(el){
+  el.style.overflow='hidden'; el.style.opacity='0'; el.style.maxHeight='0';
+  requestAnimationFrame(()=>{
+    el.style.transition='opacity 0.26s,max-height 0.35s cubic-bezier(.34,1.2,.64,1)';
+    el.style.opacity='1'; el.style.maxHeight='200px';
+    setTimeout(()=>{el.style.transition='';el.style.overflow='';el.style.maxHeight='';},400);
+  });
+}
+
+function _autoOpenWalletSection(accId,secKey){
+  const cardBody=document.getElementById(`wcbody-${accId}`);
+  const cardChev=document.getElementById(`wchev-${accId}`);
+  if(cardBody&&!cardBody.classList.contains('open')){
+    cardBody.classList.add('open'); cardChev?.classList.add('open');
+    _walletCardClosed.delete(accId);
+  }
+  const k=`${accId}-${secKey}`;
+  const secBody=document.getElementById(`wsbody-${k}`);
+  const secArr=document.getElementById(`wsarr-${k}`);
+  if(secBody&&!secBody.classList.contains('open')){
+    secBody.classList.add('open'); secArr?.classList.add('open');
+    _walletSectionClosed.delete(k);
+  }
+}
+
+function _insertSpendItem(spend){
+  const accId=spend.account, year=spend.date.slice(0,4), key=`${accId}-${year}`;
+  const secContent=document.querySelector(`#wsbody-${accId}-spend .wc-sec-content`);
+  if(!secContent){renderWallet();return;}
+  secContent.querySelector('.wc-empty')?.remove();
+  let yearBody=document.getElementById(`spygb-${key}`);
+  if(!yearBody){
+    const grpEl=document.createElement('div');
+    grpEl.className='sp-year-group';
+    grpEl.innerHTML=`
+      <div class="sp-year-header" onclick="toggleSpendYear('${key}')">
+        <div style="flex:1"><div class="sp-year-label">${year}年</div>
+          <div class="sp-year-count" id="sp-yr-count-${key}">0 筆支出</div></div>
+        <span class="sp-year-total" id="sp-yr-total-${key}">-${fmt(0)}</span>
+        <span class="sp-year-arrow open" id="spyarr-${key}">›</span>
+      </div>
+      <div class="sp-year-body open" id="spygb-${key}"></div>`;
+    const existing=[...secContent.querySelectorAll('.sp-year-group')];
+    let inserted=false;
+    for(const eg of existing){
+      const egY=eg.querySelector('.sp-year-label')?.textContent?.replace('年','')||'0';
+      if(year>egY){secContent.insertBefore(grpEl,eg);inserted=true;break;}
+    }
+    if(!inserted)secContent.appendChild(grpEl);
+    yearBody=document.getElementById(`spygb-${key}`);
+  } else if(!yearBody.classList.contains('open')){
+    yearBody.classList.add('open');
+    document.getElementById(`spyarr-${key}`)?.classList.add('open');
+  }
+  const wrap=document.createElement('div');
+  wrap.innerHTML=_spendItemHtml(spend);
+  const newItem=wrap.firstElementChild;
+  yearBody.prepend(newItem);
+  _animateInsert(newItem);
+  initWalletSwipe(newItem,spend.id);
+  _patchYearGroupAfterDelete(accId,year);
+  _autoOpenWalletSection(accId,'spend');
+  _patchWalletNumbers();
+}
+
+function _insertWishItem(wish){
+  const accId=wish.account;
+  const bal=computeBalances()[accId]||0;
+  const secContent=document.querySelector(`#wsbody-${accId}-wish .wc-sec-content`);
+  if(!secContent){renderWallet();return;}
+  secContent.querySelector('.wc-empty')?.remove();
+  const wrap=document.createElement('div');
+  wrap.innerHTML=_wishItemHtml(wish,bal,accId);
+  const newItem=wrap.firstElementChild;
+  secContent.appendChild(newItem);
+  _animateInsert(newItem);
+  initWalletSwipe(newItem,wish.id);
+  _autoOpenWalletSection(accId,'wish');
+  _patchWalletNumbers();
+}
+
+function _updateSpendItemInPlace(id){
+  const spend=getSpending().find(s=>s.id===id);
+  if(!spend){renderWallet();return;}
+  const oldItem=document.getElementById(`item-${id}`);
+  if(!oldItem){renderWallet();return;}
+  const wrap=document.createElement('div');
+  wrap.innerHTML=_spendItemHtml(spend);
+  const newItem=wrap.firstElementChild;
+  oldItem.replaceWith(newItem);
+  initWalletSwipe(newItem,id);
+  _patchYearGroupAfterDelete(spend.account,spend.date.slice(0,4));
+  _patchWalletNumbers();
+}
+
+function _updateWishItemInPlace(id){
+  const wish=getWishes().find(w=>w.id===id);
+  if(!wish){renderWallet();return;}
+  const oldItem=document.getElementById(`item-${id}`);
+  if(!oldItem){renderWallet();return;}
+  const bal=computeBalances()[wish.account]||0;
+  const wrap=document.createElement('div');
+  wrap.innerHTML=_wishItemHtml(wish,bal,wish.account);
+  const newItem=wrap.firstElementChild;
+  oldItem.replaceWith(newItem);
+  initWalletSwipe(newItem,id);
+  _patchWalletNumbers();
+}
+
+// 無動畫 fallback（跨年份編輯等罕見情況）
+function _softRenderWallet(){
+  const el=document.getElementById('wallet-cards');
+  const sumEl=document.getElementById('wallet-summary-wrap');
+  el?.classList.add('no-anim'); sumEl?.classList.add('no-anim');
+  renderWallet();
+  requestAnimationFrame(()=>{el?.classList.remove('no-anim');sumEl?.classList.remove('no-anim');});
 }
 
 function renderWallet(){
