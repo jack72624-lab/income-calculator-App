@@ -1172,6 +1172,7 @@ function closeUserMenu() {
 }
 
 // ══ Firestore ══
+let _recentLocalWrite = false; // 抑制自己寫入後的 snapshot echo re-render
 function startFirestoreSync() {
   if (!currentUser) return;
   setSyncStatus('syncing');
@@ -1182,6 +1183,8 @@ function startFirestoreSync() {
         saveLocalRecords(d.records || []);
         if (d.spending) saveLocalSpending(d.spending);
         if (d.wishes)   saveLocalWishes(d.wishes);
+        // 本機寫入的 echo snapshot：只更新資料，不重繪 UI（已由外科手術更新完成）
+        if (_recentLocalWrite) { _recentLocalWrite = false; setSyncStatus('synced'); return; }
         if(currentTab==='analysis') renderAnalysis();
         if(currentTab==='wallet') renderWallet();
       }
@@ -1198,6 +1201,7 @@ async function pushToFirestore() {
   clearTimeout(_pushTimer);
   _pushTimer = setTimeout(async () => {
     setSyncStatus('syncing');
+    _recentLocalWrite = true;
     try {
       await db.collection('users').doc(currentUser.uid).set({
         records:  getRecords(),
@@ -1206,7 +1210,9 @@ async function pushToFirestore() {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       setSyncStatus('synced');
-    } catch { setSyncStatus('offline'); }
+    } catch { _recentLocalWrite = false; setSyncStatus('offline'); }
+    // 安全網：若 snapshot 超時未觸發，1.5s 後重置旗標
+    setTimeout(()=>{ _recentLocalWrite = false; }, 1500);
   }, 600);
 }
 
@@ -1306,19 +1312,77 @@ function initSwipe(item, id) {
   });
 }
 function deleteRecord(id) {
+  const records=getRecords();
+  const deleted=records.find(r=>r.id===id);
+  saveRecords(records.filter(r=>r.id!==id));
   const item=document.getElementById(`item-${id}`);
   if(item){
     item.style.transition='opacity 0.25s,max-height 0.35s 0.1s';
+    item.style.overflow='hidden';
     item.style.opacity='0'; item.style.maxHeight=item.offsetHeight+'px';
     setTimeout(()=>{item.style.maxHeight='0';},50);
     setTimeout(()=>{
-      const records=getRecords().filter(r=>r.id!==id);
-      saveRecords(records); renderAnalysis();
+      item.remove();
+      if(deleted)_patchDateGroupAfterDelete(deleted.date);
+      _renderAnalysisStatsOnly();
     },400);
   } else {
-    saveRecords(getRecords().filter(r=>r.id!==id)); renderAnalysis();
+    renderAnalysis();
   }
   _openSwipeId=null;
+}
+
+// ── 刪除 record 後：清理空 date-group，更新計數/金額 ──
+function _patchDateGroupAfterDelete(date){
+  const body=document.getElementById(`dgb-${date}`);
+  if(!body)return;
+  if(!body.querySelector('.dg-rec-item')){
+    const group=body.closest('.date-group');
+    if(group){
+      group.style.transition='opacity 0.2s,max-height 0.28s 0.04s';
+      group.style.overflow='hidden'; group.style.opacity='0';
+      group.style.maxHeight=group.offsetHeight+'px';
+      setTimeout(()=>{group.style.maxHeight='0';},40);
+      setTimeout(()=>group.remove(),300);
+    }
+  } else {
+    const grp=body.closest('.date-group'); if(!grp)return;
+    const recs=getRecords().filter(r=>r.date===date);
+    const countEl=grp.querySelector('.dg-count-tag');
+    const totalEl=grp.querySelector('.dg-total');
+    if(countEl)countEl.textContent=recs.length>1?`${recs.length} 筆記錄`:'1 筆記錄';
+    if(totalEl)totalEl.textContent=fmt(recs.reduce((s,r)=>s+r.total,0));
+  }
+}
+
+// ── 只更新統計數字/圖表，不重建 rec-list ──
+function _renderAnalysisStatsOnly(){
+  const records=getRecords().filter(r=>r.date.startsWith(String(currentYear)));
+  if(!records.length){
+    document.getElementById('a-total').textContent='—';
+    document.getElementById('a-count').textContent='0 筆記錄';
+    document.getElementById('a-avg').textContent='—';
+    document.getElementById('a-active-months').textContent='尚無紀錄';
+    renderChart(Array(12).fill(0));
+    ['type-breakdown','alloc-list'].forEach(id=>document.getElementById(id).innerHTML='<div class="no-data">尚無紀錄</div>');
+    return;
+  }
+  const T=records.reduce((a,r)=>({total:a.total+r.total,myway:a.myway+r.myway,invest:a.invest+r.invest,personal:a.personal+r.personal,music:a.music+r.music,eng:a.eng+r.eng,other:a.other+(r.other||0)}),{total:0,myway:0,invest:0,personal:0,music:0,eng:0,other:0});
+  const monthly=Array(12).fill(0),monthlyMusic=Array(12).fill(0),monthlyEng=Array(12).fill(0);
+  records.forEach(r=>{
+    const m=parseInt(r.date.slice(5,7))-1; monthly[m]+=r.total;
+    if(r.entries&&r.entries[0]){
+      if(r.entries[0].type==='music')monthlyMusic[m]+=r.total;
+      else if(r.entries[0].type==='engineering')monthlyEng[m]+=r.total;
+    }
+  });
+  const activeMonths=monthly.filter(v=>v>0).length;
+  document.getElementById('a-total').textContent=fmt(T.total);
+  document.getElementById('a-count').textContent=`${records.length} 筆記錄`;
+  document.getElementById('a-avg').textContent=activeMonths>0?fmt(T.total/activeMonths):'—';
+  document.getElementById('a-active-months').textContent=`${activeMonths} 個月有收入`;
+  renderChart(monthly,monthlyMusic,monthlyEng);
+  renderTypeBreakdown(T); renderAlloc(T);
 }
 
 // ══ Entries ══
@@ -1866,15 +1930,26 @@ function confirmPartialSpend(){
   if(!_partialWish)return;
   const amt=parseFloat(document.getElementById('partial-spend-amt').value)||0;
   if(amt<=0)return;
-  const list=getSpending();
-  list.push({id:`sp${Date.now()}`,account:_partialWish.accountId,amount:amt,note:_partialWish.name,date:new Date().toISOString().slice(0,10)});
-  saveSpending(list);
-  if(_partialWish.deletesWish || amt>=_partialWish.target){
-    saveWishes(getWishes().filter(w=>w.id!==_partialWish.wishId));
-  }
+
+  // 先取出需要的值，再清空 _partialWish，避免任何 race condition
+  const {wishId,accountId,name}=_partialWish;
   _partialWish=null;
+
+  // 記錄支出到 localStorage
+  const list=getSpending();
+  list.push({id:`sp${Date.now()}`,account:accountId,amount:amt,note:name,date:new Date().toISOString().slice(0,10)});
+  saveLocalSpending(list);
+
+  // 立即從本地移除願望（不管金額多少，確認就消失）
+  const updatedWishes=getWishes().filter(w=>w.id!==wishId);
+  saveLocalWishes(updatedWishes);
+
+  // 關閉 sheet 並立即 render（從 localStorage 讀，不等 Firestore）
   closeSheet('partial-spend-sheet');
   renderWallet();
+
+  // 最後才推到 Firestore（非同步，不影響 UI）
+  pushToFirestore();
 }
 
 // ── Edit spend ──
@@ -2036,31 +2111,111 @@ function toggleSpendYear(key){
 
 function deleteSpend(id){
   _openWalletSwipeId=null;
+  const spending=getSpending();
+  const deleted=spending.find(s=>s.id===id);
+  saveSpending(spending.filter(s=>s.id!==id));
   const item=document.getElementById(`item-${id}`);
   if(item){
     item.style.transition='opacity 0.22s,max-height 0.32s 0.08s';
-    item.style.overflow='hidden';
-    item.style.opacity='0';
+    item.style.overflow='hidden'; item.style.opacity='0';
     item.style.maxHeight=item.offsetHeight+'px';
     setTimeout(()=>{item.style.maxHeight='0';},60);
-    setTimeout(()=>{saveSpending(getSpending().filter(s=>s.id!==id));renderWallet();},380);
+    setTimeout(()=>{
+      item.remove();
+      if(deleted)_patchYearGroupAfterDelete(deleted.account,deleted.date.slice(0,4));
+      _patchWalletNumbers();
+    },380);
   } else {
-    saveSpending(getSpending().filter(s=>s.id!==id));renderWallet();
+    _patchWalletNumbers();
   }
 }
 
 function deleteWish(id){
   _openWalletSwipeId=null;
+  const wishes=getWishes();
+  const deleted=wishes.find(w=>w.id===id);
+  saveWishes(wishes.filter(w=>w.id!==id));
   const item=document.getElementById(`item-${id}`);
   if(item){
     item.style.transition='opacity 0.22s,max-height 0.32s 0.08s';
-    item.style.overflow='hidden';
-    item.style.opacity='0';
+    item.style.overflow='hidden'; item.style.opacity='0';
     item.style.maxHeight=item.offsetHeight+'px';
     setTimeout(()=>{item.style.maxHeight='0';},60);
-    setTimeout(()=>{saveWishes(getWishes().filter(w=>w.id!==id));renderWallet();},380);
+    setTimeout(()=>{
+      item.remove();
+      if(deleted)_patchWishSectionAfterDelete(deleted.account);
+      _patchWalletNumbers();
+    },380);
   } else {
-    saveWishes(getWishes().filter(w=>w.id!==id));renderWallet();
+    _patchWalletNumbers();
+  }
+}
+
+// ── 只更新數字，不重建 wallet HTML ──
+function _patchWalletNumbers(){
+  const balances=computeBalances();
+  const spending=getSpending(); const wishes=getWishes(); const records=getRecords();
+  const totalIncome=records.reduce((s,r)=>s+r.total,0);
+  const totalSpent=spending.reduce((s,sp)=>s+sp.amount,0);
+  const totalAvail=Object.values(balances).reduce((s,v)=>s+v,0);
+  const thisYear=new Date().getFullYear().toString();
+  const yearIncome=records.filter(r=>r.date.startsWith(thisYear)).reduce((s,r)=>s+r.total,0);
+  const yearSpent=spending.filter(sp=>sp.date.startsWith(thisYear)).reduce((s,sp)=>s+sp.amount,0);
+  const yearNet=yearIncome-yearSpent;
+  const _sv=(id,val,cls)=>{const el=document.getElementById(id);if(!el)return;el.textContent=fmt(val);if(cls!==undefined)el.className=cls;};
+  _sv('wsm-val-total-income',totalIncome);
+  _sv('wsm-val-total-spent',totalSpent);
+  _sv('wsm-val-total-avail',totalAvail,`wsm-val wsm-avail${totalAvail<0?' neg':''}`);
+  _sv('wsm-val-year-income',yearIncome);
+  _sv('wsm-val-year-spent',yearSpent);
+  _sv('wsm-val-year-net',yearNet,`wsm-val ${yearNet>=0?'wsm-avail':'wsm-spend'}`);
+  ACCOUNTS.forEach(acc=>{
+    const bal=balances[acc.id]||0;
+    const balEl=document.getElementById(`wc-bal-${acc.id}`);
+    if(balEl){balEl.textContent=fmt(bal);balEl.className=`wc-bal${bal<0?' negative':''}`;}
+    const accWishes=wishes.filter(w=>w.account===acc.id);
+    const hasAchieved=accWishes.some(w=>bal>=w.target);
+    const hintEl=document.getElementById(`wc-achieve-hint-${acc.id}`);
+    if(hintEl)hintEl.style.display=hasAchieved?'':'none';
+    accWishes.forEach(w=>{
+      const pct=Math.min(100,bal>0?Math.round(bal/w.target*100):0);
+      const achieved=bal>=w.target;
+      const fillEl=document.getElementById(`wi-fill-${w.id}`);
+      const pctEl=document.getElementById(`wi-pct-${w.id}`);
+      const progressEl=document.getElementById(`wi-progress-${w.id}`);
+      const nameEl=document.getElementById(`wi-name-${w.id}`);
+      if(fillEl){fillEl.style.width=pct+'%';fillEl.className=`wish-fill${achieved?' full':''}`;}
+      if(pctEl)pctEl.textContent=pct+'%';
+      if(progressEl)progressEl.textContent=`${fmt(Math.min(bal,w.target))} / ${fmt(w.target)}`;
+      if(nameEl)nameEl.innerHTML=w.name+(achieved?'<span class="wi-badge">達標</span>':'');
+    });
+  });
+}
+
+// ── 更新年份群組的計數/金額，若空則移除 ──
+function _patchYearGroupAfterDelete(accountId,year){
+  const key=`${accountId}-${year}`;
+  const items=getSpending().filter(s=>s.account===accountId&&s.date.startsWith(year));
+  if(!items.length){
+    const grpEl=document.getElementById(`spygb-${key}`)?.closest('.sp-year-group');
+    if(grpEl)grpEl.remove();
+    const secContent=document.querySelector(`#wsbody-${accountId}-spend .wc-sec-content`);
+    if(secContent&&!secContent.querySelector('.sp-year-group'))
+      secContent.innerHTML='<div class="wc-empty">尚無支出記錄</div>';
+  } else {
+    const yrTotal=items.reduce((t,s)=>t+s.amount,0);
+    const totalEl=document.getElementById(`sp-yr-total-${key}`);
+    const countEl=document.getElementById(`sp-yr-count-${key}`);
+    if(totalEl)totalEl.textContent=`-${fmt(yrTotal)}`;
+    if(countEl)countEl.textContent=`${items.length} 筆支出`;
+  }
+}
+
+// ── 刪除願望後，若 section 空了則顯示空狀態 ──
+function _patchWishSectionAfterDelete(accountId){
+  if(!getWishes().filter(w=>w.account===accountId).length){
+    const secContent=document.querySelector(`#wsbody-${accountId}-wish .wc-sec-content`);
+    if(secContent)secContent.innerHTML='<div class="wc-empty">尚無願望清單</div>';
   }
 }
 
@@ -2085,19 +2240,19 @@ function renderWallet(){
     sumEl.innerHTML=totalIncome>0
       ?`<div class="wallet-summary-card">
           <div style="display:flex;padding:13px 8px">
-            <div class="wsm-item"><div class="wsm-label">累計分配</div><div class="wsm-val">${fmt(totalIncome)}</div></div>
+            <div class="wsm-item"><div class="wsm-label">累計分配</div><div class="wsm-val" id="wsm-val-total-income">${fmt(totalIncome)}</div></div>
             <div class="wsm-div"></div>
-            <div class="wsm-item"><div class="wsm-label">已支出</div><div class="wsm-val wsm-spend">${fmt(totalSpent)}</div></div>
+            <div class="wsm-item"><div class="wsm-label">已支出</div><div class="wsm-val wsm-spend" id="wsm-val-total-spent">${fmt(totalSpent)}</div></div>
             <div class="wsm-div"></div>
-            <div class="wsm-item"><div class="wsm-label">可用餘額</div><div class="wsm-val wsm-avail${totalAvail<0?' neg':''}">${fmt(totalAvail)}</div></div>
+            <div class="wsm-item"><div class="wsm-label">可用餘額</div><div class="wsm-val wsm-avail${totalAvail<0?' neg':''}" id="wsm-val-total-avail">${fmt(totalAvail)}</div></div>
           </div>
           <div style="border-top:1px solid rgba(255,255,255,0.09);display:flex;align-items:center;padding:9px 8px;gap:4px">
             <span style="font-size:9px;font-weight:700;color:var(--k500);letter-spacing:0.4px;white-space:nowrap;padding-left:4px;margin-right:2px">${thisYear}年</span>
-            <div class="wsm-item"><div class="wsm-label" style="font-size:8px">本年收入</div><div class="wsm-val" style="font-size:13px">${fmt(yearIncome)}</div></div>
+            <div class="wsm-item"><div class="wsm-label" style="font-size:8px">本年收入</div><div class="wsm-val" style="font-size:13px" id="wsm-val-year-income">${fmt(yearIncome)}</div></div>
             <div class="wsm-div"></div>
-            <div class="wsm-item"><div class="wsm-label" style="font-size:8px">本年支出</div><div class="wsm-val wsm-spend" style="font-size:13px">${fmt(yearSpent)}</div></div>
+            <div class="wsm-item"><div class="wsm-label" style="font-size:8px">本年支出</div><div class="wsm-val wsm-spend" style="font-size:13px" id="wsm-val-year-spent">${fmt(yearSpent)}</div></div>
             <div class="wsm-div"></div>
-            <div class="wsm-item"><div class="wsm-label" style="font-size:8px">本年淨增</div><div class="wsm-val ${yearNet>=0?'wsm-avail':'wsm-spend'}" style="font-size:13px">${fmt(yearNet)}</div></div>
+            <div class="wsm-item"><div class="wsm-label" style="font-size:8px">本年淨增</div><div class="wsm-val ${yearNet>=0?'wsm-avail':'wsm-spend'}" style="font-size:13px" id="wsm-val-year-net">${fmt(yearNet)}</div></div>
           </div>
         </div>`
       :'';
@@ -2142,8 +2297,8 @@ function renderWallet(){
           return `
             <div class="sp-year-group">
               <div class="sp-year-header" onclick="toggleSpendYear('${key}')">
-                <div style="flex:1"><div class="sp-year-label">${yr}年</div><div class="sp-year-count">${items.length} 筆支出</div></div>
-                <span class="sp-year-total">-${fmt(yrTotal)}</span>
+                <div style="flex:1"><div class="sp-year-label">${yr}年</div><div class="sp-year-count" id="sp-yr-count-${key}">${items.length} 筆支出</div></div>
+                <span class="sp-year-total" id="sp-yr-total-${key}">-${fmt(yrTotal)}</span>
                 <span class="sp-year-arrow${yrOpen?' open':''}" id="spyarr-${key}">›</span>
               </div>
               <div class="sp-year-body${yrOpen?' open':''}" id="spygb-${key}">${rows}</div>
@@ -2162,14 +2317,14 @@ function renderWallet(){
               <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteWish('${w.id}')">刪除</button></div>
               <div class="wi-row" id="wsr-${w.id}">
                 <div class="wi-content">
-                  <div class="wi-name">${w.name}${achieved?'<span class="wi-badge">達標</span>':''}</div>
+                  <div class="wi-name" id="wi-name-${w.id}">${w.name}${achieved?'<span class="wi-badge">達標</span>':''}</div>
                   <div class="wi-meta">
-                    <span class="wi-progress-label">${fmt(Math.min(bal,w.target))} / ${fmt(w.target)}</span>
+                    <span class="wi-progress-label" id="wi-progress-${w.id}">${fmt(Math.min(bal,w.target))} / ${fmt(w.target)}</span>
                     ${achieved
                       ? `<button class="wi-buy-btn" onclick="event.stopPropagation();openPartialSpend('${w.id}','${acc.id}',${w.target},'${w.name.replace(/'/g,'\\u0027')}',${bal},${w.target},true)">購買 →</button>`
-                      : `<span class="wi-pct-group"><span class="wi-pct">${pct}%</span><button class="wi-advance-btn" onclick="event.stopPropagation();openPartialSpend('${w.id}','${acc.id}',${w.target},'${w.name.replace(/'/g,'\\u0027')}',${bal},0,false)">預支</button></span>`}
+                      : `<span class="wi-pct-group"><span class="wi-pct" id="wi-pct-${w.id}">${pct}%</span><button class="wi-advance-btn" onclick="event.stopPropagation();openPartialSpend('${w.id}','${acc.id}',${w.target},'${w.name.replace(/'/g,'\\u0027')}',${bal},0,false)">預支</button></span>`}
                   </div>
-                  <div class="wish-track"><div class="wish-fill${achieved?' full':''}" style="width:${pct}%"></div></div>
+                  <div class="wish-track"><div class="wish-fill${achieved?' full':''}" id="wi-fill-${w.id}" style="width:${pct}%"></div></div>
                 </div>
               </div>
             </div>`;
@@ -2185,8 +2340,8 @@ function renderWallet(){
           <div class="wc-accent" style="background:${acc.accent}"></div>
           <div class="wc-info">
             <div class="wc-name">${acc.icon} ${acc.name}</div>
-            <div class="wc-bal${bal<0?' negative':''}">${fmt(bal)}</div>
-            ${hasAchieved?'<div class="wc-achieve-hint"><span class="wc-achieve-dot"></span><span class="wc-achieve-label">可購買</span></div>':''}
+            <div class="wc-bal${bal<0?' negative':''}" id="wc-bal-${acc.id}">${fmt(bal)}</div>
+            <div class="wc-achieve-hint" id="wc-achieve-hint-${acc.id}" style="display:${hasAchieved?'':'none'}"><span class="wc-achieve-dot"></span><span class="wc-achieve-label">可購買</span></div>
           </div>
           <div class="wc-chevron${cardOpen?' open':''}" id="wchev-${acc.id}">›</div>
         </div>
