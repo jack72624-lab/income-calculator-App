@@ -272,6 +272,8 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .dg-rec-item{position:relative;overflow:hidden}
 .dg-rec-item:not(:last-child) .rec-swipe-row{border-bottom:1px solid var(--border)}
 .rec-del-bg{position:absolute;right:0;top:0;bottom:0;width:82px;background:#dc2626;display:flex;align-items:center;justify-content:center}
+.w-edit-bg,.r-edit-bg{position:absolute;left:0;top:0;bottom:0;width:80px;background:#3b82f6;display:flex;align-items:center;justify-content:center}
+.w-edit-confirm,.r-edit-confirm{background:transparent;border:none;color:#fff;font-size:13px;font-weight:600;cursor:pointer;width:100%;height:100%;padding:0}
 .rec-del-confirm{color:white;font-size:13px;font-weight:700;letter-spacing:0.3px;background:none;border:none;cursor:pointer;width:100%;height:100%;padding:0}
 .rec-swipe-row{position:relative;background:var(--card);z-index:1;display:flex;align-items:center;padding:12px 16px;will-change:transform}
 .rec-swipe-row.snapping{transition:transform 0.32s cubic-bezier(.4,0,.2,1)}
@@ -510,9 +512,6 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .ws-acc-btn{flex-shrink:0;padding:7px 13px;border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:500;color:var(--text2);background:var(--card);cursor:pointer;white-space:nowrap;transition:all 0.18s;position:relative;overflow:hidden}
 .ws-acc-btn.active{background:var(--k900);color:#f5f2ef;border-color:var(--k900);font-weight:600}
 
-/* ── Edit icon buttons on rows ── */
-.si-edit-btn,.wi-edit-btn{width:24px;height:24px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--k400);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:8px;transition:background 0.12s;padding:0;line-height:1}
-.si-edit-btn:active,.wi-edit-btn:active{background:var(--k50)}
 
 /* ── Achievement hint on collapsed header ── */
 .wc-achieve-hint{font-size:10px;color:var(--k900);font-weight:700;margin-top:3px;letter-spacing:0.2px}
@@ -787,6 +786,32 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         <input type="number" inputmode="numeric" class="ws-input" id="edit-wish-amt" placeholder="0">
       </div>
       <button class="ws-confirm" onclick="confirmEditWish()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 編輯收入紀錄 bottom sheet ── -->
+<div id="edit-record-sheet" class="wallet-sheet gone hiding" onclick="closeSheet('edit-record-sheet')">
+  <div class="ws-panel" onclick="event.stopPropagation()">
+    <div class="ws-nav">
+      <button class="ws-close" onclick="closeSheet('edit-record-sheet')">取消</button>
+      <div class="ws-title">編輯紀錄</div>
+      <div style="min-width:48px"></div>
+    </div>
+    <div class="ws-body">
+      <div class="ws-field">
+        <div class="ws-label">日期</div>
+        <input type="date" class="ws-input" id="edit-rec-date">
+      </div>
+      <div class="ws-field">
+        <div class="ws-label">名稱</div>
+        <input type="text" class="ws-input" id="edit-rec-name" placeholder="名稱（選填）" autocomplete="off">
+      </div>
+      <div class="ws-field">
+        <div class="ws-label">總金額</div>
+        <input type="number" inputmode="numeric" class="ws-input" id="edit-rec-amt" placeholder="0">
+      </div>
+      <button class="ws-confirm" onclick="confirmEditRecord()">儲存</button>
     </div>
   </div>
 </div>
@@ -1180,13 +1205,14 @@ function initSwipe(item, id) {
   item.addEventListener('touchmove', e=>{
     if(!isDragging) return;
     const dx=e.touches[0].clientX-startX;
-    row.style.transform=`translateX(${Math.max(-82,Math.min(0,curX+dx))}px)`;
+    row.style.transform=`translateX(${Math.max(-82,Math.min(80,curX+dx))}px)`;
   },{passive:true});
   item.addEventListener('touchend', ()=>{
     if(!isDragging) return; isDragging=false;
     const endX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
     row.classList.add('snapping');
-    if(endX<-42){row.style.transform='translateX(-82px)';_openSwipeId=id;}
+    if(endX>40){row.style.transform='translateX(80px)';_openSwipeId=id;}
+    else if(endX<-42){row.style.transform='translateX(-82px)';_openSwipeId=id;}
     else{row.style.transform='translateX(0)';_openSwipeId=null;}
   });
 }
@@ -1452,6 +1478,7 @@ function renderRecordHistory(records){
       const firstName=r.entries&&r.entries[0]&&r.entries[0].name?r.entries[0].name:'';
       const nameHint=firstName&&recs.length>1?`<div class="dg-rec-name">${firstName}${r.entries.length>1?' 等 '+r.entries.length+' 筆':''}</div>`:'';
       return `<div class="dg-rec-item" id="item-${r.id}">
+        <div class="r-edit-bg"><button class="r-edit-confirm" onclick="openEditRecord('${r.id}')">編輯</button></div>
         <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteRecord('${r.id}')">刪除</button></div>
         <div class="rec-swipe-row" id="swipe-row-${r.id}">
           <div class="dg-rec-info">
@@ -1535,8 +1562,8 @@ document.addEventListener('touchstart',e=>{
 // ══ Ripple ══
 function addRipple(el,e){
   if(!el)return;
-  const old=el.style.position;
-  if(!old||old==='static')el.style.position='relative';
+  const computed=window.getComputedStyle(el).position;
+  if(computed==='static')el.style.position='relative';
   el.style.overflow='hidden';
   const rect=el.getBoundingClientRect();
   const touch=e.touches?.[0]||e;
@@ -1714,6 +1741,7 @@ function purchaseWish(wishId,accountId,amount,name){
   const list=getSpending();
   list.push({id:`sp${Date.now()}`,account:accountId,amount,note:name,date:new Date().toISOString().slice(0,10)});
   saveSpending(list);
+  saveWishes(getWishes().filter(w=>w.id!==wishId));
   renderWallet();
 }
 
@@ -1759,6 +1787,48 @@ function confirmEditWish(){
   renderWallet();
 }
 
+// ── Edit record ──
+let _editRecordId=null;
+function openEditRecord(id){
+  const r=getRecords().find(r=>r.id===id);
+  if(!r)return;
+  _editRecordId=id;
+  document.getElementById('edit-rec-date').value=r.date;
+  const firstName=r.entries&&r.entries[0]?(r.entries[0].name||''):'';
+  document.getElementById('edit-rec-name').value=firstName;
+  document.getElementById('edit-rec-amt').value=r.total;
+  showSheet('edit-record-sheet');
+  setTimeout(()=>document.getElementById('edit-rec-name').focus(),450);
+}
+function confirmEditRecord(){
+  const date=document.getElementById('edit-rec-date').value;
+  const name=document.getElementById('edit-rec-name').value.trim();
+  const newTotal=parseFloat(document.getElementById('edit-rec-amt').value)||0;
+  if(!date||newTotal<=0||!_editRecordId)return;
+  const records=getRecords();
+  const idx=records.findIndex(r=>r.id===_editRecordId);
+  if(idx===-1)return;
+  const r={...records[idx],date};
+  if(r.entries&&r.entries.length>0&&r.total>0&&newTotal!==r.total){
+    const ratio=newTotal/r.total;
+    let running=0;
+    r.entries=r.entries.map((e,i)=>{
+      if(i===r.entries.length-1)return{...e,amount:Math.round((newTotal-running)*100)/100};
+      const a=Math.round(e.amount*ratio*100)/100;running+=a;
+      return{...e,amount:a};
+    });
+  } else if(r.entries&&r.entries.length===1){
+    r.entries=[{...r.entries[0],amount:newTotal}];
+  }
+  r.total=newTotal;
+  if(r.entries&&r.entries[0])r.entries[0]={...r.entries[0],name:name||r.entries[0].name};
+  records[idx]=r;
+  saveRecords(records);
+  _editRecordId=null;
+  closeSheet('edit-record-sheet');
+  renderAnalysis();
+}
+
 // ── Wallet collapse state (closed = collapsed; cards start closed) ──
 const _walletCardClosed    = new Set(['myway','invest','personal','music','eng']);
 const _walletSectionClosed = new Set();
@@ -1787,13 +1857,14 @@ function initWalletSwipe(item, id){
   item.addEventListener('touchmove',e=>{
     if(!isDragging)return;
     const dx=e.touches[0].clientX-startX;
-    row.style.transform=`translateX(${Math.max(-82,Math.min(0,curX+dx))}px)`;
+    row.style.transform=`translateX(${Math.max(-82,Math.min(80,curX+dx))}px)`;
   },{passive:true});
   item.addEventListener('touchend',()=>{
     if(!isDragging)return; isDragging=false;
     const endX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
     row.classList.add('snapping');
-    if(endX<-42){row.style.transform='translateX(-82px)';_openWalletSwipeId=id;}
+    if(endX>40){row.style.transform='translateX(80px)';_openWalletSwipeId=id;}
+    else if(endX<-42){row.style.transform='translateX(-82px)';_openWalletSwipeId=id;}
     else{row.style.transform='translateX(0)';_openWalletSwipeId=null;}
   });
 }
@@ -1887,6 +1958,7 @@ function renderWallet(){
           const yrOpen=!_walletYearClosed.has(key);
           const rows=items.map(s=>`
             <div class="sp-swipe-item" id="item-${s.id}">
+              <div class="w-edit-bg"><button class="w-edit-confirm" onclick="openEditSpend('${s.id}')">編輯</button></div>
               <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteSpend('${s.id}')">刪除</button></div>
               <div class="sp-row" id="wsr-${s.id}">
                 <div class="si-left">
@@ -1895,7 +1967,6 @@ function renderWallet(){
                 </div>
                 <div class="si-right">
                   <span class="si-amt">-${fmt(s.amount)}</span>
-                  <button class="si-edit-btn" onclick="event.stopPropagation();openEditSpend('${s.id}')">✏️</button>
                 </div>
               </div>
             </div>`).join('');
@@ -1918,6 +1989,7 @@ function renderWallet(){
           const achieved=bal>=w.target;
           return `
             <div class="wi-swipe-item" id="item-${w.id}">
+              <div class="w-edit-bg"><button class="w-edit-confirm" onclick="openEditWish('${w.id}')">編輯</button></div>
               <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteWish('${w.id}')">刪除</button></div>
               <div class="wi-row" id="wsr-${w.id}">
                 <div class="wi-content">
@@ -1930,7 +2002,6 @@ function renderWallet(){
                   </div>
                   <div class="wish-track"><div class="wish-fill${achieved?' full':''}" style="width:${pct}%"></div></div>
                 </div>
-                <button class="wi-edit-btn" onclick="event.stopPropagation();openEditWish('${w.id}')">✏️</button>
               </div>
             </div>`;
         }).join('')
