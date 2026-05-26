@@ -1200,9 +1200,9 @@ function closeOpenSwipe(exceptId) {
 }
 function initSwipe(item, id) {
   const row = item.querySelector('.rec-swipe-row');
-  let startX, curX=0, isDragging=false;
+  let startX, curX=0, isDragging=false, totalMove=0;
   item.addEventListener('touchstart', e=>{
-    startX=e.touches[0].clientX; isDragging=true;
+    startX=e.touches[0].clientX; isDragging=true; totalMove=0;
     row.classList.remove('snapping');
     curX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
     closeOpenSwipe(id);
@@ -1210,12 +1210,15 @@ function initSwipe(item, id) {
   item.addEventListener('touchmove', e=>{
     if(!isDragging) return;
     const dx=e.touches[0].clientX-startX;
+    totalMove=Math.abs(dx);
     row.style.transform=`translateX(${Math.max(-82,Math.min(80,curX+dx))}px)`;
   },{passive:true});
   item.addEventListener('touchend', ()=>{
     if(!isDragging) return; isDragging=false;
     const endX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
     row.classList.add('snapping');
+    // 輕點（幾乎沒有移動）且列處於滑開狀態 → 復原到中間
+    if(totalMove<8 && curX!==0){row.style.transform='translateX(0)';_openSwipeId=null;return;}
     if(endX>40){row.style.transform='translateX(80px)';_openSwipeId=id;}
     else if(endX<-42){row.style.transform='translateX(-82px)';_openSwipeId=id;}
     else{row.style.transform='translateX(0)';_openSwipeId=null;}
@@ -1852,9 +1855,9 @@ function initWalletSwipe(item, id){
   const row=item.querySelector('.sp-row,.wi-row');
   if(!row||item._walletSwipeInit)return;
   item._walletSwipeInit=true;
-  let startX,curX=0,isDragging=false;
+  let startX,curX=0,isDragging=false,totalMove=0;
   item.addEventListener('touchstart',e=>{
-    startX=e.touches[0].clientX; isDragging=true;
+    startX=e.touches[0].clientX; isDragging=true; totalMove=0;
     row.classList.remove('snapping');
     curX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
     closeOpenWalletSwipe(id);
@@ -1862,12 +1865,15 @@ function initWalletSwipe(item, id){
   item.addEventListener('touchmove',e=>{
     if(!isDragging)return;
     const dx=e.touches[0].clientX-startX;
+    totalMove=Math.abs(dx);
     row.style.transform=`translateX(${Math.max(-82,Math.min(80,curX+dx))}px)`;
   },{passive:true});
   item.addEventListener('touchend',()=>{
     if(!isDragging)return; isDragging=false;
     const endX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
     row.classList.add('snapping');
+    // 輕點已滑開的列 → 復原到中間
+    if(totalMove<8 && curX!==0){row.style.transform='translateX(0)';_openWalletSwipeId=null;return;}
     if(endX>40){row.style.transform='translateX(80px)';_openWalletSwipeId=id;}
     else if(endX<-42){row.style.transform='translateX(-82px)';_openWalletSwipeId=id;}
     else{row.style.transform='translateX(0)';_openWalletSwipeId=null;}
@@ -1998,7 +2004,7 @@ function renderWallet(){
               <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteWish('${w.id}')">刪除</button></div>
               <div class="wi-row" id="wsr-${w.id}">
                 <div class="wi-content">
-                  <div class="wi-name">${w.name}${achieved?'<span class="wi-badge">Ready</span>':''}</div>
+                  <div class="wi-name">${w.name}${achieved?'<span class="wi-badge">達標</span>':''}</div>
                   <div class="wi-meta">
                     <span class="wi-progress-label">${fmt(Math.min(bal,w.target))} / ${fmt(w.target)}</span>
                     ${achieved
