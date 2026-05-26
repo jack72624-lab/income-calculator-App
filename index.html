@@ -796,6 +796,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     </div>
     <div class="ws-body">
       <div class="ws-field">
+        <div class="ws-label">日期</div>
+        <input type="date" class="ws-input" id="edit-spend-date">
+      </div>
+      <div class="ws-field">
         <div class="ws-label">金額</div>
         <input type="number" inputmode="numeric" class="ws-input" id="edit-spend-amt" placeholder="0">
       </div>
@@ -1865,7 +1869,7 @@ function confirmPartialSpend(){
   const list=getSpending();
   list.push({id:`sp${Date.now()}`,account:_partialWish.accountId,amount:amt,note:_partialWish.name,date:new Date().toISOString().slice(0,10)});
   saveSpending(list);
-  if(_partialWish.deletesWish){
+  if(_partialWish.deletesWish || amt>=_partialWish.target){
     saveWishes(getWishes().filter(w=>w.id!==_partialWish.wishId));
   }
   _partialWish=null;
@@ -1879,6 +1883,7 @@ function openEditSpend(id){
   const s=getSpending().find(s=>s.id===id);
   if(!s)return;
   _editSpendId=id;
+  document.getElementById('edit-spend-date').value=s.date||new Date().toISOString().slice(0,10);
   document.getElementById('edit-spend-amt').value=s.amount;
   document.getElementById('edit-spend-note').value=s.note||'';
   showSheet('edit-spend-sheet');
@@ -1888,7 +1893,8 @@ function confirmEditSpend(){
   const amt=parseFloat(document.getElementById('edit-spend-amt').value)||0;
   if(amt<=0||!_editSpendId)return;
   const note=document.getElementById('edit-spend-note').value.trim();
-  saveSpending(getSpending().map(s=>s.id===_editSpendId?{...s,amount:amt,note}:s));
+  const date=document.getElementById('edit-spend-date').value||new Date().toISOString().slice(0,10);
+  saveSpending(getSpending().map(s=>s.id===_editSpendId?{...s,amount:amt,note,date}:s));
   _editSpendId=null;
   closeSheet('edit-spend-sheet');
   renderWallet();
