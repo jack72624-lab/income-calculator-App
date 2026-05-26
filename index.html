@@ -110,8 +110,8 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 
 /* ── Pages ── */
 #pages-viewport{flex:1;overflow:hidden;position:relative;min-height:0}
-#pages-track{display:flex;width:200%;height:100%;min-height:0;transition:transform 0.38s cubic-bezier(.4,0,.2,1);will-change:transform}
-.page{width:50%;height:100%;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px 16px 20px}
+#pages-track{display:flex;width:300%;height:100%;min-height:0;transition:transform 0.38s cubic-bezier(.4,0,.2,1);will-change:transform}
+.page{width:33.333%;height:100%;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px 16px 20px}
 
 /* ── Tab bar ── */
 .tabbar{display:flex;background:var(--k900);border-top:1px solid rgba(255,255,255,0.07);flex-shrink:0;padding-bottom:var(--safe-bot)}
@@ -404,6 +404,122 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .alloc-row:nth-child(1){animation-delay:0ms}.alloc-row:nth-child(2){animation-delay:50ms}
 .alloc-row:nth-child(3){animation-delay:100ms}.alloc-row:nth-child(4){animation-delay:150ms}
 .alloc-row:nth-child(5){animation-delay:200ms}
+
+/* ══ WALLET PAGE ══ */
+.wallet-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--sh);animation:cardUp 0.3s cubic-bezier(.4,0,.2,1) both}
+.wallet-card:nth-child(1){animation-delay:0ms}.wallet-card:nth-child(2){animation-delay:60ms}
+.wallet-card:nth-child(3){animation-delay:120ms}.wallet-card:nth-child(4){animation-delay:180ms}
+.wallet-card:nth-child(5){animation-delay:240ms}
+
+/* Card header (clickable, collapses body) */
+.wc-header{display:flex;align-items:stretch;border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.15s}
+.wc-header:active{background:var(--k50)}
+.wc-accent{width:4px;flex-shrink:0}
+.wc-info{flex:1;padding:14px 16px}
+.wc-name{font-size:11px;font-weight:700;color:var(--label);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:4px}
+.wc-bal{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-0.8px}
+.wc-bal.negative{color:#dc2626}
+.wc-chevron{font-size:20px;color:var(--k300);display:flex;align-items:center;padding-right:16px;transition:transform 0.3s cubic-bezier(.34,1.2,.64,1)}
+.wc-chevron.open{transform:rotate(90deg)}
+
+/* Card body collapse */
+.wc-body{overflow:hidden;max-height:0;transition:max-height 0.45s cubic-bezier(.34,1.1,.64,1)}
+.wc-body.open{max-height:4000px}
+
+/* Section headers (collapsible) */
+.wc-section{border-bottom:1px solid var(--border)}
+.wc-section:last-child{border-bottom:none}
+.wc-sec-header{display:flex;align-items:center;padding:11px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.15s;gap:8px}
+.wc-sec-header:active{background:var(--k50)}
+.wc-sec-label{font-size:10px;font-weight:700;color:var(--label);letter-spacing:0.6px;text-transform:uppercase;flex:1}
+.wc-sec-arrow{font-size:14px;color:var(--k300);transition:transform 0.28s cubic-bezier(.34,1.2,.64,1);display:inline-block;line-height:1}
+.wc-sec-arrow.open{transform:rotate(90deg)}
+.wc-sec-body{overflow:hidden;max-height:0;transition:max-height 0.42s cubic-bezier(.34,1.1,.64,1)}
+.wc-sec-body.open{max-height:3000px}
+.wc-sec-content{padding:4px 16px 12px}
+.wc-btn-add{width:100%;padding:9px;background:transparent;border:1px dashed var(--k200);border-radius:9px;color:var(--k400);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.3px;transition:background 0.15s,transform 0.12s;margin-top:8px;position:relative;overflow:hidden}
+.wc-btn-add:active{background:var(--k50);transform:scale(0.98)}
+.wc-empty{font-size:12px;color:var(--k300);padding:8px 0;text-align:center}
+
+/* Year groups inside spending */
+.sp-year-group{border-bottom:1px solid var(--border)}
+.sp-year-group:last-of-type{border-bottom:none}
+.sp-year-header{display:flex;align-items:center;padding:9px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.15s;gap:8px}
+.sp-year-header:active{background:var(--k50)}
+.sp-year-label{font-size:12px;font-weight:600;color:var(--text2)}
+.sp-year-count{font-size:10px;color:var(--label);margin-top:1px}
+.sp-year-total{font-size:13px;font-weight:700;color:#dc2626;flex-shrink:0}
+.sp-year-arrow{font-size:13px;color:var(--k300);transition:transform 0.25s cubic-bezier(.34,1.2,.64,1);display:inline-block;line-height:1;flex-shrink:0}
+.sp-year-arrow.open{transform:rotate(90deg)}
+.sp-year-body{overflow:hidden;max-height:0;transition:max-height 0.42s cubic-bezier(.34,1.1,.64,1)}
+.sp-year-body.open{max-height:2000px}
+
+/* Spending items — swipe layout */
+.sp-swipe-item{position:relative;overflow:hidden}
+.sp-swipe-item:not(:last-child){border-bottom:1px solid var(--border)}
+.sp-row{position:relative;background:var(--card);z-index:1;display:flex;align-items:center;padding:10px 0;will-change:transform}
+.sp-row.snapping{transition:transform 0.32s cubic-bezier(.4,0,.2,1)}
+.si-left{flex:1;min-width:0}
+.si-note{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si-date{font-size:10px;color:var(--label)}
+.si-right{flex-shrink:0}
+.si-amt{font-size:14px;font-weight:700;color:#dc2626}
+
+/* Wish items — swipe layout */
+.wi-swipe-item{position:relative;overflow:hidden}
+.wi-swipe-item:not(:last-child){border-bottom:1px solid var(--border)}
+.wi-row{position:relative;background:var(--card);z-index:1;display:flex;align-items:flex-start;padding:11px 0;will-change:transform}
+.wi-row.snapping{transition:transform 0.32s cubic-bezier(.4,0,.2,1)}
+.wi-content{flex:1;min-width:0}
+.wi-name{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:5px;line-height:1.4}
+.wi-badge{display:inline-block;background:var(--k900);color:#f5f2ef;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;letter-spacing:0.2px;vertical-align:middle;animation:badgePop 0.4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes badgePop{from{transform:scale(0);opacity:0}60%{transform:scale(1.1)}to{transform:scale(1);opacity:1}}
+.wi-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.wi-progress-label{font-size:10px;color:var(--label)}
+.wi-pct{font-size:10px;font-weight:700;color:var(--text3)}
+.wish-track{height:5px;background:var(--k100);border-radius:3px;overflow:hidden}
+.wish-fill{height:100%;background:var(--k700);border-radius:3px;transition:width 0.65s cubic-bezier(.4,0,.2,1)}
+.wish-fill.full{background:var(--k900)}
+
+/* Wallet bottom sheets */
+.wallet-sheet{position:fixed;inset:0;z-index:160;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(0,0,0,0.45);transition:opacity 0.32s cubic-bezier(.4,0,.2,1);pointer-events:auto}
+.wallet-sheet.hiding{opacity:0;pointer-events:none}
+.wallet-sheet.gone{display:none}
+.ws-panel{background:var(--bg);border-radius:22px 22px 0 0;padding-bottom:var(--safe-bot);box-shadow:0 -8px 40px rgba(0,0,0,0.2);transform:translateY(60px);transition:transform 0.42s cubic-bezier(.34,1.56,.64,1)}
+.wallet-sheet:not(.hiding):not(.gone) .ws-panel{transform:translateY(0)}
+.ws-nav{display:flex;align-items:center;padding:14px 20px 12px;border-bottom:1px solid var(--border)}
+.ws-title{flex:1;text-align:center;font-size:15px;font-weight:700;color:var(--text)}
+.ws-close{background:none;border:none;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;padding:4px 8px;min-width:48px}
+.ws-body{padding:16px 16px 8px}
+.ws-field{margin-bottom:14px}
+.ws-label{font-size:10px;font-weight:700;color:var(--label);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:7px}
+.ws-input{width:100%;border:1px solid var(--border);background:var(--card);border-radius:10px;padding:12px 14px;font-size:16px;font-weight:500;color:var(--text);outline:none;transition:border-color 0.18s,box-shadow 0.18s;-webkit-appearance:none}
+.ws-input:focus{border-color:var(--k500);box-shadow:0 0 0 3px rgba(100,120,190,0.15)}
+.ws-input::placeholder{color:var(--k200);font-weight:400;font-size:15px}
+.ws-confirm{width:100%;padding:15px;background:var(--k900);color:#f5f2ef;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px;margin-bottom:8px;transition:transform 0.12s;position:relative;overflow:hidden}
+.ws-confirm:active{transform:scale(0.98)}
+
+/* ── FAB ── */
+#fab-add{position:fixed;right:20px;bottom:calc(var(--safe-bot) + 56px + 18px);width:52px;height:52px;border-radius:26px;background:var(--k900);color:#f5f2ef;font-size:28px;font-weight:300;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.35),0 1px 4px rgba(0,0,0,0.15);z-index:50;display:none;align-items:center;justify-content:center;overflow:hidden;transition:transform 0.15s cubic-bezier(.34,1.56,.64,1)}
+#fab-add.visible{display:flex}
+#fab-add:active{transform:scale(0.9)}
+
+/* ── Add sheet — account chips ── */
+.ws-account-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.ws-account-scroll::-webkit-scrollbar{display:none}
+.ws-acc-btn{flex-shrink:0;padding:7px 13px;border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:500;color:var(--text2);background:var(--card);cursor:pointer;white-space:nowrap;transition:all 0.18s;position:relative;overflow:hidden}
+.ws-acc-btn.active{background:var(--k900);color:#f5f2ef;border-color:var(--k900);font-weight:600}
+
+/* ── Edit icon buttons on rows ── */
+.si-edit-btn,.wi-edit-btn{width:24px;height:24px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--k400);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:8px;transition:background 0.12s;padding:0;line-height:1}
+.si-edit-btn:active,.wi-edit-btn:active{background:var(--k50)}
+
+/* ── Achievement hint on collapsed header ── */
+.wc-achieve-hint{font-size:10px;color:var(--k900);font-weight:700;margin-top:3px;letter-spacing:0.2px}
+
+/* ── Purchase button ── */
+.wi-buy-btn{background:var(--k900);color:#f5f2ef;font-size:11px;font-weight:700;padding:4px 10px;border:none;border-radius:8px;cursor:pointer;transition:transform 0.12s;letter-spacing:0.2px;white-space:nowrap;flex-shrink:0}
+.wi-buy-btn:active{transform:scale(0.92)}
 </style>
 </head>
 <body>
@@ -540,6 +656,13 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         <div style="height:8px"></div>
       </div>
 
+      <!-- 資金頁 -->
+      <div class="page" id="page-wallet">
+        <div class="sec" style="margin-top:2px">資金</div>
+        <div id="wallet-cards"></div>
+        <div style="height:8px"></div>
+      </div>
+
     </div>
   </div>
 
@@ -553,8 +676,15 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       <svg viewBox="0 0 20 20" fill="none"><rect x="3" y="11" width="3" height="6" rx="1" fill="currentColor"/><rect x="8.5" y="7" width="3" height="10" rx="1" fill="currentColor"/><rect x="14" y="3" width="3" height="14" rx="1" fill="currentColor"/></svg>
       年度<div class="tab-dot"></div>
     </button>
+    <button class="tab" id="tab-wallet" onclick="showTab('wallet')">
+      <svg viewBox="0 0 20 20" fill="none" width="18" height="18"><rect x="2" y="5" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 9h16" stroke="currentColor" stroke-width="1.5"/><circle cx="14.5" cy="13" r="1.2" fill="currentColor"/></svg>
+      資金<div class="tab-dot"></div>
+    </button>
   </div>
 </div>
+
+<!-- ── FAB ── -->
+<button id="fab-add" onclick="openAddSheet()">＋</button>
 
 <div class="overlay" id="overlay" onclick="dismissBanner()"></div>
 <div id="install-banner" class="hidden">
@@ -564,6 +694,101 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
   <div class="banner-step">② 選擇 <span>「加入主畫面」</span></div>
   <div class="banner-step">③ 點右上角 <span>「新增」</span> 完成</div>
   <button class="btn-dismiss" onclick="dismissBanner()">知道了</button>
+</div>
+
+<!-- ── 統一新增 bottom sheet ── -->
+<div id="add-sheet" class="wallet-sheet gone hiding" onclick="closeSheet('add-sheet')">
+  <div class="ws-panel" onclick="event.stopPropagation()">
+    <div class="ws-nav">
+      <button class="ws-close" onclick="closeSheet('add-sheet')">取消</button>
+      <div class="ws-title">新增</div>
+      <div style="min-width:48px"></div>
+    </div>
+    <div class="ws-body">
+      <div class="ws-field">
+        <div class="ws-label">帳戶</div>
+        <div class="ws-account-scroll" id="add-account-scroll">
+          <button class="ws-acc-btn active" data-account="myway"    onclick="selectAddAccount('myway',this)">💳 My Way</button>
+          <button class="ws-acc-btn"         data-account="invest"   onclick="selectAddAccount('invest',this)">📈 國泰投資</button>
+          <button class="ws-acc-btn"         data-account="personal" onclick="selectAddAccount('personal',this)">🎯 個人投資</button>
+          <button class="ws-acc-btn"         data-account="music"    onclick="selectAddAccount('music',this)">🎵 音樂投資</button>
+          <button class="ws-acc-btn"         data-account="eng"      onclick="selectAddAccount('eng',this)">⚙️ 工程投資</button>
+        </div>
+      </div>
+      <div class="ws-field">
+        <div class="ws-label">類型</div>
+        <div class="seg" id="add-type-seg" style="margin-bottom:0">
+          <button class="seg-btn on" onclick="selectAddType('spend',this)">支出</button>
+          <button class="seg-btn"    onclick="selectAddType('wish',this)">願望</button>
+        </div>
+      </div>
+      <div id="add-spend-fields">
+        <div class="ws-field" style="margin-top:14px">
+          <div class="ws-label">金額</div>
+          <input type="number" inputmode="numeric" class="ws-input" id="add-spend-amt" placeholder="0">
+        </div>
+        <div class="ws-field">
+          <div class="ws-label">備註（選填）</div>
+          <input type="text" class="ws-input" id="add-spend-note" placeholder="例：超商買飲料" autocomplete="off">
+        </div>
+      </div>
+      <div id="add-wish-fields" style="display:none">
+        <div class="ws-field" style="margin-top:14px">
+          <div class="ws-label">願望名稱</div>
+          <input type="text" class="ws-input" id="add-wish-name" placeholder="例：新耳機" autocomplete="off">
+        </div>
+        <div class="ws-field">
+          <div class="ws-label">目標金額</div>
+          <input type="number" inputmode="numeric" class="ws-input" id="add-wish-amt" placeholder="0">
+        </div>
+      </div>
+      <button class="ws-confirm" onclick="confirmAdd()">確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 編輯支出 bottom sheet ── -->
+<div id="edit-spend-sheet" class="wallet-sheet gone hiding" onclick="closeSheet('edit-spend-sheet')">
+  <div class="ws-panel" onclick="event.stopPropagation()">
+    <div class="ws-nav">
+      <button class="ws-close" onclick="closeSheet('edit-spend-sheet')">取消</button>
+      <div class="ws-title">編輯支出</div>
+      <div style="min-width:48px"></div>
+    </div>
+    <div class="ws-body">
+      <div class="ws-field">
+        <div class="ws-label">金額</div>
+        <input type="number" inputmode="numeric" class="ws-input" id="edit-spend-amt" placeholder="0">
+      </div>
+      <div class="ws-field">
+        <div class="ws-label">備註</div>
+        <input type="text" class="ws-input" id="edit-spend-note" placeholder="備註" autocomplete="off">
+      </div>
+      <button class="ws-confirm" onclick="confirmEditSpend()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 編輯願望 bottom sheet ── -->
+<div id="edit-wish-sheet" class="wallet-sheet gone hiding" onclick="closeSheet('edit-wish-sheet')">
+  <div class="ws-panel" onclick="event.stopPropagation()">
+    <div class="ws-nav">
+      <button class="ws-close" onclick="closeSheet('edit-wish-sheet')">取消</button>
+      <div class="ws-title">編輯願望</div>
+      <div style="min-width:48px"></div>
+    </div>
+    <div class="ws-body">
+      <div class="ws-field">
+        <div class="ws-label">願望名稱</div>
+        <input type="text" class="ws-input" id="edit-wish-name" placeholder="願望名稱" autocomplete="off">
+      </div>
+      <div class="ws-field">
+        <div class="ws-label">目標金額</div>
+        <input type="number" inputmode="numeric" class="ws-input" id="edit-wish-amt" placeholder="0">
+      </div>
+      <button class="ws-confirm" onclick="confirmEditWish()">儲存</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── Settings Overlay ── -->
@@ -853,7 +1078,8 @@ function startFirestoreSync() {
       if (doc.exists) {
         const remote = doc.data().records || [];
         saveLocalRecords(remote);
-        renderAnalysis();
+        if(currentTab==='analysis') renderAnalysis();
+        if(currentTab==='wallet') renderWallet();
       }
       setSyncStatus('synced');
     }, () => setSyncStatus('offline'));
@@ -1087,12 +1313,18 @@ function calc() {
 }
 
 // ══ Tabs ══
+let currentTab = 'calc';
 function showTab(tab){
-  document.getElementById('pages-track').style.transform=tab==='analysis'?'translateX(-50%)':'translateX(0)';
+  currentTab = tab;
+  const pct = tab==='wallet' ? '-66.666%' : tab==='analysis' ? '-33.333%' : '0';
+  document.getElementById('pages-track').style.transform=`translateX(${pct})`;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(`tab-${tab}`).classList.add('active');
   updateTabIndicator(tab);
+  const fab=document.getElementById('fab-add');
+  if(fab) fab.classList.toggle('visible', tab==='wallet');
   if(tab==='analysis') renderAnalysis();
+  if(tab==='wallet') renderWallet();
 }
 
 // ══ Analysis ══
@@ -1295,7 +1527,10 @@ function isStandalone(){return window.navigator.standalone===true}
 function showBanner(){document.getElementById('install-banner').classList.remove('hidden');document.getElementById('overlay').classList.add('show')}
 function dismissBanner(){document.getElementById('install-banner').classList.add('hidden');document.getElementById('overlay').classList.remove('show');localStorage.setItem('banner-dismissed','1')}
 
-document.addEventListener('touchstart',e=>{if(_openSwipeId&&!e.target.closest('.rec-item'))closeOpenSwipe(null);},{passive:true});
+document.addEventListener('touchstart',e=>{
+  if(_openSwipeId&&!e.target.closest('.dg-rec-item'))closeOpenSwipe(null);
+  if(_openWalletSwipeId&&!e.target.closest('.sp-swipe-item')&&!e.target.closest('.wi-swipe-item'))closeOpenWalletSwipe(null);
+},{passive:true});
 
 // ══ Ripple ══
 function addRipple(el,e){
@@ -1372,6 +1607,382 @@ function popTotalValue(){
   el.addEventListener('animationend',()=>el.classList.remove('popping'),{once:true});
 }
 
+// service worker not used in this version
+
+// ══ Wallet ══
+const SPEND_KEY = 'spend_records_v1';
+const WISH_KEY  = 'wish_list_v1';
+
+const ACCOUNTS = [
+  { id:'myway',    name:'中信 My Way',   icon:'💳', field:'myway',    accent:'var(--k900)' },
+  { id:'invest',   name:'國泰 投資帳戶', icon:'📈', field:'invest',   accent:'var(--k700)' },
+  { id:'personal', name:'個人投資',      icon:'🎯', field:'personal', accent:'var(--k500)' },
+  { id:'music',    name:'音樂投資',      icon:'🎵', field:'music',    accent:'var(--k800)' },
+  { id:'eng',      name:'工程投資',      icon:'⚙️', field:'eng',      accent:'#5a5c78'    },
+];
+
+function getSpending(){ try{return JSON.parse(localStorage.getItem(SPEND_KEY)||'[]');}catch{return[];} }
+function saveSpending(list){ try{localStorage.setItem(SPEND_KEY,JSON.stringify(list));}catch{} }
+function getWishes(){ try{return JSON.parse(localStorage.getItem(WISH_KEY)||'[]');}catch{return[];} }
+function saveWishes(list){ try{localStorage.setItem(WISH_KEY,JSON.stringify(list));}catch{} }
+
+function computeBalances(){
+  const records=getRecords(), spending=getSpending();
+  const bal={};
+  ACCOUNTS.forEach(a=>{bal[a.id]=0;});
+  records.forEach(r=>{ ACCOUNTS.forEach(a=>{bal[a.id]+=(r[a.field]||0);}); });
+  spending.forEach(s=>{if(bal[s.account]!==undefined)bal[s.account]-=s.amount;});
+  return bal;
+}
+
+// ── Sheet helpers ──
+function showSheet(id){
+  const el=document.getElementById(id);
+  el.classList.remove('gone');
+  requestAnimationFrame(()=>el.classList.remove('hiding'));
+}
+function closeSheet(id){
+  const el=document.getElementById(id);
+  el.classList.add('hiding');
+  setTimeout(()=>el.classList.add('gone'),320);
+}
+
+// ── Unified add sheet ──
+let _addSheetAccount = 'myway';
+let _addSheetType    = 'spend';
+
+function openAddSheet(accountId){
+  _addSheetAccount = accountId || 'myway';
+  _addSheetType = 'spend';
+  // reset inputs
+  ['add-spend-amt','add-spend-note','add-wish-name','add-wish-amt'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  // sync account chips
+  document.querySelectorAll('.ws-acc-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.account===_addSheetAccount);
+  });
+  // reset type to 支出
+  document.querySelectorAll('#add-type-seg .seg-btn').forEach((b,i)=>{
+    b.classList.toggle('on', i===0);
+  });
+  document.getElementById('add-spend-fields').style.display='';
+  document.getElementById('add-wish-fields').style.display='none';
+  showSheet('add-sheet');
+  setTimeout(()=>{
+    initSegPill(document.getElementById('add-type-seg'));
+    document.getElementById('add-spend-amt').focus();
+  },450);
+}
+
+function selectAddAccount(id,btn){
+  _addSheetAccount=id;
+  document.querySelectorAll('.ws-acc-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectAddType(type,btn){
+  _addSheetType=type;
+  document.querySelectorAll('#add-type-seg .seg-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('add-spend-fields').style.display=type==='spend'?'':'none';
+  document.getElementById('add-wish-fields').style.display=type==='wish'?'':'none';
+}
+
+function confirmAdd(){
+  if(_addSheetType==='spend'){
+    const amt=parseFloat(document.getElementById('add-spend-amt').value)||0;
+    if(amt<=0||!_addSheetAccount)return;
+    const note=document.getElementById('add-spend-note').value.trim();
+    const list=getSpending();
+    list.push({id:`sp${Date.now()}`,account:_addSheetAccount,amount:amt,note,date:new Date().toISOString().slice(0,10)});
+    saveSpending(list);
+  } else {
+    const name=document.getElementById('add-wish-name').value.trim();
+    const amt=parseFloat(document.getElementById('add-wish-amt').value)||0;
+    if(!name||amt<=0||!_addSheetAccount)return;
+    const list=getWishes();
+    list.push({id:`wi${Date.now()}`,account:_addSheetAccount,name,target:amt});
+    saveWishes(list);
+  }
+  closeSheet('add-sheet');
+  renderWallet();
+}
+
+// ── Purchase wish → auto-create spending ──
+function purchaseWish(wishId,accountId,amount,name){
+  const list=getSpending();
+  list.push({id:`sp${Date.now()}`,account:accountId,amount,note:name,date:new Date().toISOString().slice(0,10)});
+  saveSpending(list);
+  renderWallet();
+}
+
+// ── Edit spend ──
+let _editSpendId=null;
+function openEditSpend(id){
+  const s=getSpending().find(s=>s.id===id);
+  if(!s)return;
+  _editSpendId=id;
+  document.getElementById('edit-spend-amt').value=s.amount;
+  document.getElementById('edit-spend-note').value=s.note||'';
+  showSheet('edit-spend-sheet');
+  setTimeout(()=>document.getElementById('edit-spend-amt').focus(),450);
+}
+function confirmEditSpend(){
+  const amt=parseFloat(document.getElementById('edit-spend-amt').value)||0;
+  if(amt<=0||!_editSpendId)return;
+  const note=document.getElementById('edit-spend-note').value.trim();
+  saveSpending(getSpending().map(s=>s.id===_editSpendId?{...s,amount:amt,note}:s));
+  _editSpendId=null;
+  closeSheet('edit-spend-sheet');
+  renderWallet();
+}
+
+// ── Edit wish ──
+let _editWishId=null;
+function openEditWish(id){
+  const w=getWishes().find(w=>w.id===id);
+  if(!w)return;
+  _editWishId=id;
+  document.getElementById('edit-wish-name').value=w.name;
+  document.getElementById('edit-wish-amt').value=w.target;
+  showSheet('edit-wish-sheet');
+  setTimeout(()=>document.getElementById('edit-wish-name').focus(),450);
+}
+function confirmEditWish(){
+  const name=document.getElementById('edit-wish-name').value.trim();
+  const amt=parseFloat(document.getElementById('edit-wish-amt').value)||0;
+  if(!name||amt<=0||!_editWishId)return;
+  saveWishes(getWishes().map(w=>w.id===_editWishId?{...w,name,target:amt}:w));
+  _editWishId=null;
+  closeSheet('edit-wish-sheet');
+  renderWallet();
+}
+
+// ── Wallet collapse state (closed = collapsed; cards start closed) ──
+const _walletCardClosed    = new Set(['myway','invest','personal','music','eng']);
+const _walletSectionClosed = new Set();
+const _walletYearClosed    = new Set();
+let   _openWalletSwipeId   = null;
+
+function closeOpenWalletSwipe(exceptId){
+  if(_openWalletSwipeId && _openWalletSwipeId !== exceptId){
+    const row=document.getElementById(`wsr-${_openWalletSwipeId}`);
+    if(row){row.classList.add('snapping');row.style.transform='translateX(0)';}
+    _openWalletSwipeId=null;
+  }
+}
+
+function initWalletSwipe(item, id){
+  const row=item.querySelector('.sp-row,.wi-row');
+  if(!row||item._walletSwipeInit)return;
+  item._walletSwipeInit=true;
+  let startX,curX=0,isDragging=false;
+  item.addEventListener('touchstart',e=>{
+    startX=e.touches[0].clientX; isDragging=true;
+    row.classList.remove('snapping');
+    curX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
+    closeOpenWalletSwipe(id);
+  },{passive:true});
+  item.addEventListener('touchmove',e=>{
+    if(!isDragging)return;
+    const dx=e.touches[0].clientX-startX;
+    row.style.transform=`translateX(${Math.max(-82,Math.min(0,curX+dx))}px)`;
+  },{passive:true});
+  item.addEventListener('touchend',()=>{
+    if(!isDragging)return; isDragging=false;
+    const endX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
+    row.classList.add('snapping');
+    if(endX<-42){row.style.transform='translateX(-82px)';_openWalletSwipeId=id;}
+    else{row.style.transform='translateX(0)';_openWalletSwipeId=null;}
+  });
+}
+
+function toggleWalletCard(id){
+  if(_walletCardClosed.has(id)){_walletCardClosed.delete(id);}else{_walletCardClosed.add(id);}
+  const body=document.getElementById(`wcbody-${id}`);
+  const chev=document.getElementById(`wchev-${id}`);
+  const isOpen=!_walletCardClosed.has(id);
+  if(body){isOpen?body.classList.add('open'):body.classList.remove('open');}
+  if(chev){isOpen?chev.classList.add('open'):chev.classList.remove('open');}
+}
+
+function toggleWalletSection(accId,sec){
+  const key=`${accId}-${sec}`;
+  if(_walletSectionClosed.has(key)){_walletSectionClosed.delete(key);}else{_walletSectionClosed.add(key);}
+  const body=document.getElementById(`wsbody-${key}`);
+  const arr=document.getElementById(`wsarr-${key}`);
+  const isOpen=!_walletSectionClosed.has(key);
+  if(body){isOpen?body.classList.add('open'):body.classList.remove('open');}
+  if(arr){isOpen?arr.classList.add('open'):arr.classList.remove('open');}
+}
+
+function toggleSpendYear(key){
+  if(_walletYearClosed.has(key)){_walletYearClosed.delete(key);}else{_walletYearClosed.add(key);}
+  const body=document.getElementById(`spygb-${key}`);
+  const arr=document.getElementById(`spyarr-${key}`);
+  const isOpen=!_walletYearClosed.has(key);
+  if(body){isOpen?body.classList.add('open'):body.classList.remove('open');}
+  if(arr){isOpen?arr.classList.add('open'):arr.classList.remove('open');}
+}
+
+function deleteSpend(id){
+  _openWalletSwipeId=null;
+  const item=document.getElementById(`item-${id}`);
+  if(item){
+    item.style.transition='opacity 0.22s,max-height 0.32s 0.08s';
+    item.style.overflow='hidden';
+    item.style.opacity='0';
+    item.style.maxHeight=item.offsetHeight+'px';
+    setTimeout(()=>{item.style.maxHeight='0';},60);
+    setTimeout(()=>{saveSpending(getSpending().filter(s=>s.id!==id));renderWallet();},380);
+  } else {
+    saveSpending(getSpending().filter(s=>s.id!==id));renderWallet();
+  }
+}
+
+function deleteWish(id){
+  _openWalletSwipeId=null;
+  const item=document.getElementById(`item-${id}`);
+  if(item){
+    item.style.transition='opacity 0.22s,max-height 0.32s 0.08s';
+    item.style.overflow='hidden';
+    item.style.opacity='0';
+    item.style.maxHeight=item.offsetHeight+'px';
+    setTimeout(()=>{item.style.maxHeight='0';},60);
+    setTimeout(()=>{saveWishes(getWishes().filter(w=>w.id!==id));renderWallet();},380);
+  } else {
+    saveWishes(getWishes().filter(w=>w.id!==id));renderWallet();
+  }
+}
+
+function renderWallet(){
+  const balances=computeBalances();
+  const spending=getSpending();
+  const wishes=getWishes();
+  const el=document.getElementById('wallet-cards');
+  if(!el)return;
+
+  el.innerHTML=ACCOUNTS.map(acc=>{
+    const bal=balances[acc.id]||0;
+    const accSpend=spending.filter(s=>s.account===acc.id).sort((a,b)=>b.date.localeCompare(a.date));
+    const accWishes=wishes.filter(w=>w.account===acc.id);
+    const cardOpen   =!_walletCardClosed.has(acc.id);
+    const spendOpen  =!_walletSectionClosed.has(`${acc.id}-spend`);
+    const wishOpen   =!_walletSectionClosed.has(`${acc.id}-wish`);
+
+    // ── Spending: group by year ──
+    const yearGroups={}, yearOrder=[];
+    accSpend.forEach(s=>{
+      const yr=s.date.slice(0,4);
+      if(!yearGroups[yr]){yearGroups[yr]=[];yearOrder.push(yr);}
+      yearGroups[yr].push(s);
+    });
+
+    const spendHtml=yearOrder.length
+      ? yearOrder.map(yr=>{
+          const items=yearGroups[yr];
+          const yrTotal=items.reduce((t,s)=>t+s.amount,0);
+          const key=`${acc.id}-${yr}`;
+          const yrOpen=!_walletYearClosed.has(key);
+          const rows=items.map(s=>`
+            <div class="sp-swipe-item" id="item-${s.id}">
+              <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteSpend('${s.id}')">刪除</button></div>
+              <div class="sp-row" id="wsr-${s.id}">
+                <div class="si-left">
+                  <div class="si-note">${s.note||'支出'}</div>
+                  <div class="si-date">${s.date.slice(5,7)}月${s.date.slice(8,10)}日</div>
+                </div>
+                <div class="si-right">
+                  <span class="si-amt">-${fmt(s.amount)}</span>
+                  <button class="si-edit-btn" onclick="event.stopPropagation();openEditSpend('${s.id}')">✏️</button>
+                </div>
+              </div>
+            </div>`).join('');
+          return `
+            <div class="sp-year-group">
+              <div class="sp-year-header" onclick="toggleSpendYear('${key}')">
+                <div style="flex:1"><div class="sp-year-label">${yr}年</div><div class="sp-year-count">${items.length} 筆支出</div></div>
+                <span class="sp-year-total">-${fmt(yrTotal)}</span>
+                <span class="sp-year-arrow${yrOpen?' open':''}" id="spyarr-${key}">›</span>
+              </div>
+              <div class="sp-year-body${yrOpen?' open':''}" id="spygb-${key}">${rows}</div>
+            </div>`;
+        }).join('')
+      : '<div class="wc-empty">尚無支出記錄</div>';
+
+    // ── Wish list: swipe to delete, purchase button when achieved ──
+    const wishHtml=accWishes.length
+      ? accWishes.map(w=>{
+          const pct=Math.min(100,bal>0?Math.round(bal/w.target*100):0);
+          const achieved=bal>=w.target;
+          return `
+            <div class="wi-swipe-item" id="item-${w.id}">
+              <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteWish('${w.id}')">刪除</button></div>
+              <div class="wi-row" id="wsr-${w.id}">
+                <div class="wi-content">
+                  <div class="wi-name">${w.name}${achieved?'<span class="wi-badge">可以買了！🎉</span>':''}</div>
+                  <div class="wi-meta">
+                    <span class="wi-progress-label">${fmt(Math.min(bal,w.target))} / ${fmt(w.target)}</span>
+                    ${achieved
+                      ? `<button class="wi-buy-btn" onclick="event.stopPropagation();purchaseWish('${w.id}','${acc.id}',${w.target},'${w.name.replace(/'/g,'\\u0027')}')">購買 →</button>`
+                      : `<span class="wi-pct">${pct}%</span>`}
+                  </div>
+                  <div class="wish-track"><div class="wish-fill${achieved?' full':''}" style="width:${pct}%"></div></div>
+                </div>
+                <button class="wi-edit-btn" onclick="event.stopPropagation();openEditWish('${w.id}')">✏️</button>
+              </div>
+            </div>`;
+        }).join('')
+      : '<div class="wc-empty">尚無願望清單</div>';
+
+    // Achievement check for collapsed header hint
+    const hasAchieved=accWishes.some(w=>bal>=w.target);
+
+    return `
+      <div class="wallet-card">
+        <div class="wc-header" onclick="toggleWalletCard('${acc.id}')">
+          <div class="wc-accent" style="background:${acc.accent}"></div>
+          <div class="wc-info">
+            <div class="wc-name">${acc.icon} ${acc.name}</div>
+            <div class="wc-bal${bal<0?' negative':''}">${fmt(bal)}</div>
+            ${hasAchieved?'<div class="wc-achieve-hint">🎉 有願望已達標</div>':''}
+          </div>
+          <div class="wc-chevron${cardOpen?' open':''}" id="wchev-${acc.id}">›</div>
+        </div>
+        <div class="wc-body${cardOpen?' open':''}" id="wcbody-${acc.id}">
+          <div class="wc-section">
+            <div class="wc-sec-header" onclick="toggleWalletSection('${acc.id}','spend')">
+              <span class="wc-sec-label">支出記錄</span>
+              <span class="wc-sec-arrow${spendOpen?' open':''}" id="wsarr-${acc.id}-spend">›</span>
+            </div>
+            <div class="wc-sec-body${spendOpen?' open':''}" id="wsbody-${acc.id}-spend">
+              <div class="wc-sec-content">${spendHtml}</div>
+            </div>
+          </div>
+          <div class="wc-section">
+            <div class="wc-sec-header" onclick="toggleWalletSection('${acc.id}','wish')">
+              <span class="wc-sec-label">願望清單</span>
+              <span class="wc-sec-arrow${wishOpen?' open':''}" id="wsarr-${acc.id}-wish">›</span>
+            </div>
+            <div class="wc-sec-body${wishOpen?' open':''}" id="wsbody-${acc.id}-wish">
+              <div class="wc-sec-content">${wishHtml}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Init swipe on all spend + wish items
+  spending.forEach(s=>{const item=document.getElementById(`item-${s.id}`);if(item)initWalletSwipe(item,s.id);});
+  wishes.forEach(w=>{const item=document.getElementById(`item-${w.id}`);if(item)initWalletSwipe(item,w.id);});
+
+  // Ripple on add buttons
+  el.querySelectorAll('.wc-btn-add').forEach(btn=>{
+    btn.addEventListener('touchstart',e=>addRipple(btn,e),{passive:true});
+  });
+}
+
 window.addEventListener('load',()=>{
   const p=getPrefs();
   applyTheme(p.theme||'cool');
@@ -1382,7 +1993,9 @@ window.addEventListener('load',()=>{
   // Init tab indicator after layout
   requestAnimationFrame(()=>setTimeout(()=>updateTabIndicator('calc'),80));
   // Ripple on static interactive elements
-  ['.btn-add','.btn-confirm','.year-btn','.nav-reset','.btn-google','.btn-dismiss','.btn-transfer','.settings-close-btn','.tab'].forEach(sel=>{
+  const fab=document.getElementById('fab-add');
+  if(fab) fab.addEventListener('touchstart',e=>addRipple(fab,e),{passive:true});
+  ['.btn-add','.btn-confirm','.year-btn','.nav-reset','.btn-google','.btn-dismiss','.btn-transfer','.settings-close-btn','.tab','.ws-confirm','.ws-close','.ws-acc-btn'].forEach(sel=>{
     document.querySelectorAll(sel).forEach(el=>{
       el.addEventListener('touchstart',e=>addRipple(el,e),{passive:true});
     });
