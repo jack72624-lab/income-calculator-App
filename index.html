@@ -1154,9 +1154,19 @@ function signInWithGoogle() {
   _signingIn = true;
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider).catch(err => {
-    if (err.code !== 'auth/cancelled-popup-request' && err.code !== 'auth/popup-closed-by-user') {
-      alert('登入失敗：' + err.message);
-    }
+    // iOS Safari / PWA 的 sessionStorage 隔離會造成 internal-error，
+    // 但 onAuthStateChanged 通常已從 cache 恢復登入，可靜音處理。
+    const silent = [
+      'auth/cancelled-popup-request',
+      'auth/popup-closed-by-user',
+      'auth/internal-error',
+      'auth/network-request-failed',
+    ];
+    if (silent.includes(err.code)) return;
+    // 其他錯誤：稍等確認是否其實已登入，否則才顯示提示
+    setTimeout(() => {
+      if (!auth.currentUser) alert('登入失敗，請再試一次。');
+    }, 800);
   }).finally(() => { _signingIn = false; });
 }
 function doSignOut() {
