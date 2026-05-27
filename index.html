@@ -885,6 +885,27 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
   </div>
 </div>
 
+<!-- ── 設定初始餘額 bottom sheet ── -->
+<div id="set-init-bal-sheet" class="wallet-sheet gone hiding" onclick="closeSheet('set-init-bal-sheet')">
+  <div class="ws-panel" onclick="event.stopPropagation()">
+    <div class="ws-nav">
+      <button class="ws-close" onclick="closeSheet('set-init-bal-sheet')">取消</button>
+      <div class="ws-title" id="init-bal-sheet-title">初始餘額</div>
+      <div style="min-width:48px"></div>
+    </div>
+    <div class="ws-body">
+      <div class="ws-field">
+        <div class="ws-label">初始金額（TWD）</div>
+        <input type="number" inputmode="numeric" class="ws-input" id="set-init-bal-amt" placeholder="0">
+      </div>
+      <div style="font-size:12px;color:var(--label);margin:-6px 0 12px;padding:0 2px;line-height:1.6">
+        輸入此帳戶在使用 App 前的既有餘額。計算時會加入餘額，設 0 代表從零開始。
+      </div>
+      <button class="ws-confirm" onclick="confirmSetInitBal()">儲存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── 確認 Dialog ── -->
 <div id="confirm-overlay" onclick="closeConfirmDialog()">
   <div class="confirm-box" onclick="event.stopPropagation()">
@@ -1189,6 +1210,7 @@ function startFirestoreSync() {
         saveLocalRecords(d.records || []);
         if (d.spending) saveLocalSpending(d.spending);
         if (d.wishes)   saveLocalWishes(d.wishes);
+        if (d.initBal)  saveLocalInitBalances(d.initBal);
         // 本機寫入的 echo snapshot：只更新資料，不重繪 UI（已由外科手術更新完成）
         if (_recentLocalWrite) { _recentLocalWrite = false; setSyncStatus('synced'); return; }
         if(currentTab==='analysis') renderAnalysis();
@@ -1213,6 +1235,7 @@ async function pushToFirestore() {
         records:  getRecords(),
         spending: getSpending(),
         wishes:   getWishes(),
+        initBal:  getInitBalances(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       setSyncStatus('synced');
@@ -1824,7 +1847,8 @@ function popTotalValue(){
 
 // ══ Wallet ══
 const SPEND_KEY = 'spend_records_v1';
-const WISH_KEY  = 'wish_list_v1';
+const WISH_KEY     = 'wish_list_v1';
+const INIT_BAL_KEY = 'init_balances_v1';
 
 const ACCOUNTS = [
   { id:'myway',    name:'中信 My Way',   icon:'💳', field:'myway',    accent:'var(--k900)' },
@@ -1840,11 +1864,14 @@ function saveSpending(list){ saveLocalSpending(list); pushToFirestore(); }
 function getWishes(){ try{return JSON.parse(localStorage.getItem(WISH_KEY)||'[]');}catch{return[];} }
 function saveLocalWishes(list){ try{localStorage.setItem(WISH_KEY,JSON.stringify(list));}catch{} }
 function saveWishes(list){ saveLocalWishes(list); pushToFirestore(); }
+function getInitBalances(){ try{return JSON.parse(localStorage.getItem(INIT_BAL_KEY)||'{}');}catch{return{};} }
+function saveLocalInitBalances(o){ try{localStorage.setItem(INIT_BAL_KEY,JSON.stringify(o));}catch{} }
+function saveInitBalances(o){ saveLocalInitBalances(o); pushToFirestore(); }
 
 function computeBalances(){
-  const records=getRecords(), spending=getSpending();
+  const records=getRecords(), spending=getSpending(), initBals=getInitBalances();
   const bal={};
-  ACCOUNTS.forEach(a=>{bal[a.id]=0;});
+  ACCOUNTS.forEach(a=>{bal[a.id]=initBals[a.id]||0;});
   records.forEach(r=>{ ACCOUNTS.forEach(a=>{bal[a.id]+=(r[a.field]||0);}); });
   spending.forEach(s=>{if(bal[s.account]!==undefined)bal[s.account]-=s.amount;});
   return bal;
@@ -2063,6 +2090,29 @@ function confirmEditRecord(){
   const yr=getRecords().filter(r=>r.date.startsWith(String(currentYear)));
   renderRecordHistory(yr);
   _renderAnalysisStatsOnly();
+}
+
+// ── Init balance ──
+let _initBalAccount = null;
+function openSetInitBal(accId){
+  const acc = ACCOUNTS.find(a=>a.id===accId);
+  _initBalAccount = accId;
+  document.getElementById('init-bal-sheet-title').textContent = `初始餘額：${acc?acc.name:accId}`;
+  const cur = getInitBalances()[accId] || 0;
+  document.getElementById('set-init-bal-amt').value = cur || '';
+  showSheet('set-init-bal-sheet');
+  setTimeout(()=>document.getElementById('set-init-bal-amt').focus(), 450);
+}
+function confirmSetInitBal(){
+  if(!_initBalAccount) return;
+  const raw = document.getElementById('set-init-bal-amt').value;
+  const amt = raw === '' ? 0 : (parseFloat(raw) || 0);
+  const o = getInitBalances();
+  o[_initBalAccount] = amt;
+  saveInitBalances(o);
+  _initBalAccount = null;
+  closeSheet('set-init-bal-sheet');
+  _softRenderWallet();
 }
 
 // ── Wallet collapse state (closed = collapsed; cards start closed) ──
@@ -2443,6 +2493,7 @@ function renderWallet(){
       :'';
   }
 
+  const initBals=getInitBalances();
   el.innerHTML=ACCOUNTS.map(acc=>{
     const bal=balances[acc.id]||0;
     const accSpend=spending.filter(s=>s.account===acc.id).sort((a,b)=>b.date.localeCompare(a.date));
@@ -2531,6 +2582,11 @@ function renderWallet(){
           <div class="wc-chevron${cardOpen?' open':''}" id="wchev-${acc.id}">›</div>
         </div>
         <div class="wc-body${cardOpen?' open':''}" id="wcbody-${acc.id}">
+          <div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border)">
+            <span style="font-size:10px;font-weight:700;color:var(--label);letter-spacing:0.6px;text-transform:uppercase;flex:1">初始餘額</span>
+            <span style="font-size:15px;font-weight:700;color:var(--text);margin-right:12px" id="wc-init-${acc.id}">${fmt(initBals[acc.id]||0)}</span>
+            <button onclick="event.stopPropagation();openSetInitBal('${acc.id}')" style="font-size:11px;font-weight:600;color:var(--text3);background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;cursor:pointer;transition:background 0.12s,transform 0.12s;-webkit-tap-highlight-color:transparent">設定</button>
+          </div>
           <div class="wc-section">
             <div class="wc-sec-header" onclick="toggleWalletSection('${acc.id}','spend')">
               <span class="wc-sec-label">支出記錄</span>
