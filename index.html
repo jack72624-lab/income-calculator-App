@@ -2471,8 +2471,12 @@ function renderWallet(){
   const yearSpent=spending.filter(sp=>sp.date.startsWith(thisYear)).reduce((s,sp)=>s+sp.amount,0);
   const yearNet=yearIncome-yearSpent;
   const sumEl=document.getElementById('wallet-summary-wrap');
+  const initBals=getInitBalances();
+  const totalInitBal=Object.values(initBals).reduce((s,v)=>s+(v||0),0);
+  // Re-render summary with updated show condition (now also shows when initial balances are set)
   if(sumEl){
-    sumEl.innerHTML=totalIncome>0
+    const showSummary=totalIncome>0||totalInitBal!==0||spending.length>0;
+    sumEl.innerHTML=showSummary
       ?`<div class="wallet-summary-card">
           <div style="display:flex;padding:13px 8px">
             <div class="wsm-item"><div class="wsm-label">累計分配</div><div class="wsm-val" id="wsm-val-total-income">${fmt(totalIncome)}</div></div>
@@ -2492,8 +2496,6 @@ function renderWallet(){
         </div>`
       :'';
   }
-
-  const initBals=getInitBalances();
   el.innerHTML=ACCOUNTS.map(acc=>{
     const bal=balances[acc.id]||0;
     const accSpend=spending.filter(s=>s.account===acc.id).sort((a,b)=>b.date.localeCompare(a.date));
