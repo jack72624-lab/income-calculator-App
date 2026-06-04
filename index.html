@@ -639,8 +639,8 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         <div style="height:8px"></div>
         <div class="results-card">
           <div class="rrow accent-ctbc"><div><div class="rl">中信 My Way</div><div class="rs" id="rs-myway">留存 70%</div></div><div class="rv" id="r-myway">—</div></div>
-          <div class="rrow accent-cathay"><div><div class="rl">國泰 投資帳戶</div><div class="rs">10%</div></div><div class="rv" id="r-invest">—</div></div>
-          <div class="rrow sub accent-sub1"><div><div class="rl">個人投資</div><div class="rs">10%</div></div><div class="rv" id="r-personal">—</div></div>
+          <div class="rrow accent-cathay"><div><div class="rl">國泰 投資帳戶</div><div class="rs" id="rs-invest">10%</div></div><div class="rv" id="r-invest">—</div></div>
+          <div class="rrow sub accent-sub1"><div><div class="rl">個人投資</div><div class="rs" id="rs-personal">10%</div></div><div class="rv" id="r-personal">—</div></div>
           <div class="rrow sub accent-mus" id="row-music" style="display:none"><div><div class="rl">音樂投資</div><div class="rs" id="rs-music">—</div></div><div class="rv" id="r-music">—</div></div>
           <div class="rrow sub accent-eng" id="row-eng" style="display:none"><div><div class="rl">工程投資</div><div class="rs" id="rs-eng">—</div></div><div class="rv" id="r-eng">—</div></div>
         </div>
@@ -1301,11 +1301,11 @@ function confirmSave() {
       date: today,
       total: amt,
       myway: amt*0.7,
-      invest: amt*0.1,
-      personal: amt*0.1,
+      invest:   e.type==='other' ? amt*0.15 : amt*0.1,
+      personal: e.type==='other' ? amt*0.15 : amt*0.1,
       music: e.type==='music' ? amt*0.1 : 0,
       eng:   e.type==='engineering' ? amt*0.1 : 0,
-      other: e.type==='other' ? amt*0.1 : 0,
+      other: 0,
       entries: [{name:e.name||'',amount:amt,type:e.type}]
     });
   });
@@ -1406,7 +1406,7 @@ function _renderAnalysisStatsOnly(){
     ['type-breakdown','alloc-list'].forEach(id=>document.getElementById(id).innerHTML='<div class="no-data">尚無紀錄</div>');
     return;
   }
-  const T=records.reduce((a,r)=>({total:a.total+r.total,myway:a.myway+r.myway,invest:a.invest+r.invest,personal:a.personal+r.personal,music:a.music+r.music,eng:a.eng+r.eng,other:a.other+(r.other||0)}),{total:0,myway:0,invest:0,personal:0,music:0,eng:0,other:0});
+  const T=records.reduce((a,r)=>{const typ=r.entries&&r.entries[0]?r.entries[0].type:'other';return{total:a.total+r.total,myway:a.myway+r.myway,invest:a.invest+r.invest,personal:a.personal+r.personal,music:a.music+r.music,eng:a.eng+r.eng,other:a.other+(r.other||0),musicInc:a.musicInc+(typ==='music'?r.total:0),engInc:a.engInc+(typ==='engineering'?r.total:0),otherInc:a.otherInc+(typ==='other'?r.total:0)};},{total:0,myway:0,invest:0,personal:0,music:0,eng:0,other:0,musicInc:0,engInc:0,otherInc:0});
   const monthly=Array(12).fill(0),monthlyMusic=Array(12).fill(0),monthlyEng=Array(12).fill(0);
   records.forEach(r=>{
     const m=parseInt(r.date.slice(5,7))-1; monthly[m]+=r.total;
@@ -1518,18 +1518,29 @@ function calc() {
   btn.classList.add('visible'); btn.classList.remove('done');
   document.getElementById('btn-copy-results').classList.add('visible');
   popTotalValue();
-  const each=total*0.1, myway=total*0.7;
-  const musicAmt=list.filter(e=>e.type==='music').reduce((s,e)=>s+e.amount,0)*0.1;
-  const engAmt=list.filter(e=>e.type==='engineering').reduce((s,e)=>s+e.amount,0)*0.1;
+  const myway=total*0.7;
+  const musicTotal=list.filter(e=>e.type==='music').reduce((s,e)=>s+e.amount,0);
+  const engTotal=list.filter(e=>e.type==='engineering').reduce((s,e)=>s+e.amount,0);
+  const otherTotal=list.filter(e=>e.type==='other').reduce((s,e)=>s+e.amount,0);
+  const musicAmt=musicTotal*0.1;
+  const engAmt=engTotal*0.1;
+  // 其他類型：國泰自留15% + 個人15%；音樂/工程：各10%
+  const investAmt=(musicTotal+engTotal)*0.1+otherTotal*0.15;
+  const personalAmt=investAmt;
   fmtEl(document.getElementById('r-total'),total);
   fmtEl(document.getElementById('r-myway'),myway);
-  fmtEl(document.getElementById('r-invest'),each);
-  fmtEl(document.getElementById('r-personal'),each);
+  fmtEl(document.getElementById('r-invest'),investAmt);
+  fmtEl(document.getElementById('r-personal'),personalAmt);
+  // 動態百分比 label
+  const onlyOther=otherTotal>0&&(musicTotal+engTotal)===0;
+  const noOther=otherTotal===0;
+  document.getElementById('rs-invest').textContent=onlyOther?'其他 × 15%':noOther?'10%':'依類型';
+  document.getElementById('rs-personal').textContent=onlyOther?'其他 × 15%':noOther?'10%':'依類型';
   const hasMus=musicAmt>0, hasEng=engAmt>0;
   document.getElementById('row-music').style.display=hasMus?'':'none';
   document.getElementById('row-eng').style.display=hasEng?'':'none';
-  if(hasMus){fmtEl(document.getElementById('r-music'),musicAmt);document.getElementById('rs-music').textContent=`音樂案 ${fmt(list.filter(e=>e.type==='music').reduce((s,e)=>s+e.amount,0))} × 10%`}
-  if(hasEng){fmtEl(document.getElementById('r-eng'),engAmt);document.getElementById('rs-eng').textContent=`工程案 ${fmt(list.filter(e=>e.type==='engineering').reduce((s,e)=>s+e.amount,0))} × 10%`}
+  if(hasMus){fmtEl(document.getElementById('r-music'),musicAmt);document.getElementById('rs-music').textContent=`音樂案 ${fmt(musicTotal)} × 10%`}
+  if(hasEng){fmtEl(document.getElementById('r-eng'),engAmt);document.getElementById('rs-eng').textContent=`工程案 ${fmt(engTotal)} × 10%`}
   const outMyway=list.filter(e=>e.source==='myway').reduce((s,e)=>s+e.amount,0)*0.3;
   const outCathay=list.filter(e=>e.source==='cathay').reduce((s,e)=>s+e.amount,0)*0.7;
   const net=outMyway-outCathay;
@@ -1537,10 +1548,10 @@ function calc() {
   if(Math.abs(net)<0.5)steps+=`<div class="step"><div class="step-n ok">✓</div><div class="step-body"><strong>My Way ↔ 國泰 互相抵消</strong><div class="step-note">不需跨行轉帳</div></div></div>`;
   else if(net>0){steps+=stepHtml(n++,'My Way','Line Pay',net,outCathay>0?'扣除國泰收入後的淨額':'');steps+=stepHtml(n++,'Line Pay','國泰投資帳戶',net,'一次轉入再分配');}
   else{steps+=stepHtml(n++,'國泰投資帳戶','Line Pay',-net,outMyway>0?'扣除 My Way 收入後的淨額':'');steps+=stepHtml(n++,'Line Pay','My Way',-net,'轉回留存');}
-  steps+=stepHtml(n++,'國泰投資帳戶','個人投資',each,'');
+  steps+=stepHtml(n++,'國泰投資帳戶','個人投資',personalAmt,'');
   if(hasMus)steps+=stepHtml(n++,'國泰投資帳戶','音樂投資',musicAmt,'');
   if(hasEng)steps+=stepHtml(n++,'國泰投資帳戶','工程投資',engAmt,'');
-  steps+=`<div class="step"><div class="step-n ok">✓</div><div class="step-body"><strong>國泰投資帳戶 自留</strong><div class="step-val">${fmt(each)}</div><div class="step-note">完成上方步驟後自然剩餘</div></div></div>`;
+  steps+=`<div class="step"><div class="step-n ok">✓</div><div class="step-body"><strong>國泰投資帳戶 自留</strong><div class="step-val">${fmt(investAmt)}</div><div class="step-note">完成上方步驟後自然剩餘</div></div></div>`;
   document.getElementById('steps').innerHTML=steps;
 }
 
@@ -1574,7 +1585,7 @@ function renderAnalysis(){
     ['type-breakdown','alloc-list','rec-list'].forEach(id=>document.getElementById(id).innerHTML='<div class="no-data">尚無紀錄</div>');
     return;
   }
-  const T=records.reduce((a,r)=>({total:a.total+r.total,myway:a.myway+r.myway,invest:a.invest+r.invest,personal:a.personal+r.personal,music:a.music+r.music,eng:a.eng+r.eng,other:a.other+(r.other||0)}),{total:0,myway:0,invest:0,personal:0,music:0,eng:0,other:0});
+  const T=records.reduce((a,r)=>{const typ=r.entries&&r.entries[0]?r.entries[0].type:'other';return{total:a.total+r.total,myway:a.myway+r.myway,invest:a.invest+r.invest,personal:a.personal+r.personal,music:a.music+r.music,eng:a.eng+r.eng,other:a.other+(r.other||0),musicInc:a.musicInc+(typ==='music'?r.total:0),engInc:a.engInc+(typ==='engineering'?r.total:0),otherInc:a.otherInc+(typ==='other'?r.total:0)};},{total:0,myway:0,invest:0,personal:0,music:0,eng:0,other:0,musicInc:0,engInc:0,otherInc:0});
   const monthly=Array(12).fill(0);
   const monthlyMusic=Array(12).fill(0);
   const monthlyEng=Array(12).fill(0);
@@ -1664,7 +1675,7 @@ function renderAreaChart(monthly,monthlyMusic,monthlyEng){
   el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible"><defs><linearGradient id="ag-m" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--k800)" stop-opacity="0.28"/><stop offset="100%" stop-color="var(--k800)" stop-opacity="0.03"/></linearGradient><linearGradient id="ag-e" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5a5c78" stop-opacity="0.28"/><stop offset="100%" stop-color="#5a5c78" stop-opacity="0.03"/></linearGradient></defs>${makeArea(monthlyMusic,'var(--k800)','ag-m')}${makeArea(monthlyEng,'#5a5c78','ag-e')}</svg><div style="display:flex;margin-top:4px">${CHART_LBLS.map(l=>`<span style="flex:1;font-size:8px;color:var(--label);font-weight:500;text-align:center">${l}</span>`).join('')}</div>${CHART_LEGEND}`;
 }
 function renderTypeBreakdown(T){
-  const types=[{name:'音樂案',val:T.music,cls:'var(--k800)'},{name:'工程案',val:T.eng,cls:'#5a5c78'},{name:'其他',val:T.other,cls:'var(--k500)'}].filter(t=>t.val>0);
+  const types=[{name:'音樂案',val:T.musicInc,cls:'var(--k800)'},{name:'工程案',val:T.engInc,cls:'#5a5c78'},{name:'其他',val:T.otherInc,cls:'var(--k500)'}].filter(t=>t.val>0);
   if(!types.length){document.getElementById('type-breakdown').innerHTML='<div class="no-data">尚無紀錄</div>';return;}
   const tot=types.reduce((s,t)=>s+t.val,0)||1;
   document.getElementById('type-breakdown').innerHTML=types.map(t=>{const p=Math.round(t.val/tot*100);return `<div class="type-row"><div class="type-top"><span class="type-name">${t.name}</span><span><span class="type-amt">${fmt(t.val)}</span><span class="type-pct">${p}%</span></span></div><div class="type-track"><div class="type-fill" style="width:${p}%;background:${t.cls}"></div></div></div>`;}).join('');
