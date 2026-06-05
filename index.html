@@ -1149,13 +1149,28 @@ auth.onAuthStateChanged(user => {
 });
 
 let _signingIn = false;
+
+// 偵測 iOS（iPhone / iPad / iPadOS）
+function _isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+// 啟動時處理 iOS redirect 登入回傳
+auth.getRedirectResult().then(r => {
+  if (r && r.user) _signingIn = false;
+}).catch(() => {});
+
 function signInWithGoogle() {
   if (_signingIn) return;
   _signingIn = true;
   const provider = new firebase.auth.GoogleAuthProvider();
+  if (_isIOS()) {
+    // iOS Safari 的 sessionStorage 跨分頁隔離會造成 popup 錯誤頁，改用整頁 redirect
+    auth.signInWithRedirect(provider);
+    return;
+  }
   auth.signInWithPopup(provider).catch(err => {
-    // iOS Safari / PWA 的 sessionStorage 隔離會造成 internal-error，
-    // 但 onAuthStateChanged 通常已從 cache 恢復登入，可靜音處理。
     const silent = [
       'auth/cancelled-popup-request',
       'auth/popup-closed-by-user',
@@ -1163,7 +1178,6 @@ function signInWithGoogle() {
       'auth/network-request-failed',
     ];
     if (silent.includes(err.code)) return;
-    // 其他錯誤：稍等確認是否其實已登入，否則才顯示提示
     setTimeout(() => {
       if (!auth.currentUser) alert('登入失敗，請再試一次。');
     }, 800);
