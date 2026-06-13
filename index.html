@@ -34,22 +34,30 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="收入分配">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0a0c1c">
+<meta name="theme-color" content="#e7e1d4">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet">
 
 <style>
 :root {
-  --k900:#0d0d14; --k800:#18192a; --k700:#2b2d42;
-  --k500:#50526e; --k400:#7f8299; --k300:#a6a9bc;
-  --k200:#c2c5d6; --k100:#daddef; --k50:#eceef7; --k0:#ffffff;
-  --bg:#c4c7d8; --card:var(--k0); --border:#adb0c8;
+  /* warm cream monochrome — ink (k900) → cream (k0) */
+  --k900:#211d17; --k800:#2f2a22; --k700:#433c30;
+  --k500:#6d6457; --k400:#988e7e; --k300:#b4aa99;
+  --k200:#ccc3b3; --k100:#ddd5c7; --k50:#ece6da; --k0:#faf7f1;
+  --bg:#e7e1d4; --card:#efeae0; --border:#dcd5c7;
   --text:var(--k900); --text2:var(--k800); --text3:var(--k500); --label:var(--k400);
   --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
-  --sh: 0 1px 6px rgba(0,0,0,0.09), 0 0 1px rgba(0,0,0,0.06);
-  --sh-dark: 0 4px 24px rgba(0,0,0,0.25), 0 1px 4px rgba(0,0,0,0.14);
-  --r: 14px;
+  /* neumorphic dual shadow — light from top-left, warm shadow bottom-right */
+  --nm-d:178,164,142; --nm-l:255,254,249;
+  --sh: 6px 6px 15px rgba(var(--nm-d),0.5), -6px -6px 14px rgba(var(--nm-l),0.9);
+  --sh-sm: 3px 3px 8px rgba(var(--nm-d),0.42), -3px -3px 7px rgba(var(--nm-l),0.85);
+  --sh-in: inset 3px 3px 7px rgba(var(--nm-d),0.5), inset -3px -3px 6px rgba(var(--nm-l),0.85);
+  --sh-dark: 0 12px 30px rgba(33,29,23,0.26), 0 2px 7px rgba(33,29,23,0.16);
+  --r: 20px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;background:var(--bg);color:var(--text)}
@@ -171,7 +179,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .accent-cathay::before{background:var(--k700)} .accent-cathay .rv{color:var(--k700)}
 .accent-sub1::before{background:var(--k500)} .accent-sub1 .rv{color:var(--k500)}
 .accent-mus::before{background:var(--k800)} .accent-mus .rv{color:var(--k800)}
-.accent-eng::before{background:#5a5c78} .accent-eng .rv{color:#5a5c78}
+.accent-eng::before{background:#8a8276} .accent-eng .rv{color:#8a8276}
 
 /* ── Steps ── */
 .steps-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:4px 16px;box-shadow:var(--sh)}
@@ -242,7 +250,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .al-inv::before{background:var(--k700)} .al-inv .alloc-val{color:var(--k700)}
 .al-per::before{background:var(--k500)} .al-per .alloc-val{color:var(--k500)}
 .al-mus::before{background:var(--k800)} .al-mus .alloc-val{color:var(--k800)}
-.al-eng::before{background:#5a5c78} .al-eng .alloc-val{color:#5a5c78}
+.al-eng::before{background:#8a8276} .al-eng .alloc-val{color:#8a8276}
 .no-data{color:var(--k300);font-size:13px;text-align:center;padding:32px 0}
 
 /* ── Date-grouped records ── */
@@ -297,7 +305,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .banner-title{font-size:17px;font-weight:700;margin-bottom:6px}
 .banner-desc{font-size:14px;color:var(--text3);line-height:1.6;margin-bottom:14px}
 .banner-step{font-size:14px;color:var(--text2);padding:3px 0}
-.banner-step span{color:#6278cc;font-weight:600}
+.banner-step span{color:#6d6457;font-weight:600}
 .btn-dismiss{width:100%;padding:14px;background:var(--k900);color:#f5f2ef;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:16px;transition:transform 0.12s}
 .btn-dismiss:active{transform:scale(0.98)}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;display:none}
@@ -556,9 +564,102 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .confirm-btn:active{background:var(--k50)}
 .confirm-btn.cancel{color:var(--text3);border-right:1px solid var(--border)}
 .confirm-btn.ok{color:#dc2626;font-weight:600}
+
+/* ════════════════════════════════════════════════════════
+   EDITORIAL CREAM SKIN — neumorphic · monochrome · serif
+   (final layer; supersedes earlier component styling)
+   ════════════════════════════════════════════════════════ */
+html,body{font-family:"Noto Sans TC",-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+/* — Playfair Display for all Latin numerals / currency — */
+.total-bar .tv,.wc-bal,.sum-card .sc-val,.yn-label,.dg-total,.dg-rec-amt,
+.rrow .rv,.amt-row input,.alloc-val,.type-amt,.wsm-val,.si-amt,
+.sp-year-total,.step-val,.wi-pct,.type-pct,.entry-num{
+  font-family:"Playfair Display",Georgia,serif!important;
+  font-weight:600!important;letter-spacing:0!important;
+  font-feature-settings:"lnum" 1,"tnum" 1;
+}
+.amt-row input::placeholder{font-family:"Playfair Display",Georgia,serif!important}
+.total-bar .tv,.wc-bal,.yn-label{font-weight:600!important;letter-spacing:-0.3px!important}
+
+/* — Noto Serif TC for editorial Chinese headings — */
+.nav-title,.auth-title,.ws-title,.settings-nav-title,#confirm-title{
+  font-family:"Noto Serif TC","Noto Sans TC",serif!important;font-weight:600!important;letter-spacing:0.5px!important;
+}
+
+/* — Refined section labels: small-caps tracked — */
+.sec,.wc-name,.wc-sec-label,.ws-label,.settings-sec-title,.chart-title,
+.sum-card .sc-label,.entry-num,.tl,.total-bar .tl,.yn-sub,.wsm-label{
+  letter-spacing:1.4px!important;font-weight:600!important;
+}
+
+/* — Canvas — */
+body{background:var(--bg)}
+#pages-viewport{background:var(--bg)}
+
+/* — Top chrome: seamless ink, hairline highlight — */
+.nav{border-bottom:none!important;box-shadow:0 1px 0 rgba(255,255,255,0.05),0 6px 22px rgba(33,29,23,0.10)}
+.tabbar{border-top:none!important;box-shadow:0 -2px 18px rgba(33,29,23,0.06)}
+.nav-icon,.auth-icon{background:rgba(255,255,255,0.06)!important;border-color:rgba(255,255,255,0.12)!important}
+
+/* — Neumorphic raised surfaces (no borders, soft dual shadow) — */
+.entry,.results-card,.steps-card,.transfer-card,.summary-grid .sum-card,
+.chart-wrap,.type-list,.alloc-card,.date-group,.wallet-card,.settings-list{
+  border:none!important;background:var(--card)!important;box-shadow:var(--sh)!important;
+}
+.sum-card.dark{background:var(--card)!important}
+.sum-card.dark .sc-label{color:var(--label)!important}
+.sum-card.dark .sc-val{color:var(--text)!important}
+.sum-card.dark .sc-sub{color:var(--label)!important}
+
+/* — Floating ink panels — */
+.total-bar,.year-nav,.wallet-summary-card{border:none!important;box-shadow:var(--sh-dark)!important}
+
+/* — Neumorphic inset fields & segmented controls — */
+.amt-row,.ws-input{border:none!important;background:var(--bg)!important;box-shadow:var(--sh-in)!important}
+.amt-row:focus-within,.ws-input:focus{box-shadow:var(--sh-in),0 0 0 2px rgba(67,60,48,0.22)!important}
+.seg{border:none!important;background:var(--bg)!important;box-shadow:var(--sh-in)!important}
+.cfg-select{border:none!important;background:var(--bg)!important;box-shadow:var(--sh-in)!important}
+input[type=date].ws-input,input[type=number].ws-input{color:var(--text)}
+
+/* — Buttons — */
+.btn-add,.wc-btn-add{border:1px dashed var(--k300)!important;background:transparent!important;box-shadow:none!important}
+.btn-add:active,.wc-btn-add:active{background:rgba(33,29,23,0.04)!important}
+.btn-transfer{border:none!important;box-shadow:var(--sh-sm)!important}
+.btn-import{background:var(--card)!important}
+.btn-copy-results{border:none!important;background:var(--card)!important;box-shadow:var(--sh-sm)!important}
+.nav-reset{border-radius:9px}
+
+/* — Account chips: raised pebbles — */
+.ws-acc-btn{border:none!important;background:var(--card)!important;box-shadow:var(--sh-sm)!important}
+.ws-acc-btn.active{background:var(--k900)!important;box-shadow:inset 2px 2px 5px rgba(0,0,0,0.3)!important}
+
+/* — Progress / accent strokes → ink monochrome — */
+.type-fill{background:var(--k800)!important}
+.wish-fill{background:var(--k700)!important}
+.wish-fill.full{background:var(--k900)!important}
+.type-track,.wish-track{background:var(--k100)!important}
+
+/* — Dark-panel accents kept warm (no off-palette blues) — */
+.wsm-avail{color:#d8c9a6!important}
+.wsm-avail.neg{color:#e0a08a!important}
+.sync-badge.synced{color:#cdbf9e!important}
+
+/* — Rounder, calmer corners — */
+.entry,.results-card,.steps-card,.transfer-card,.wallet-card,.chart-wrap,
+.type-list,.alloc-card,.date-group,.total-bar,.year-nav,.sum-card,
+.settings-list,.wallet-summary-card,.confirm-box,.btn-confirm,.ws-confirm{border-radius:20px!important}
+.results-card,.type-list,.alloc-card,.date-group,.steps-card,.settings-list{overflow:hidden}
+
+/* — Auth screen polish — */
+.btn-google{border-radius:16px!important;box-shadow:0 8px 24px rgba(33,29,23,0.28)!important}
+
+/* — Smoother, springier global motion — */
+*{transition-timing-function:cubic-bezier(.32,.72,0,1)}
+.page{scroll-behavior:smooth}
 </style>
 </head>
-<body>
+<body style="font-family: &quot;Noto Sans TC&quot;">
 
 <!-- ── Auth Screen ── -->
 <div id="auth-screen">
@@ -749,11 +850,11 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       <div class="ws-field">
         <div class="ws-label">帳戶</div>
         <div class="ws-account-scroll" id="add-account-scroll">
-          <button class="ws-acc-btn active" data-account="myway"    onclick="selectAddAccount('myway',this)">💳 My Way</button>
-          <button class="ws-acc-btn"         data-account="invest"   onclick="selectAddAccount('invest',this)">📈 國泰投資</button>
-          <button class="ws-acc-btn"         data-account="personal" onclick="selectAddAccount('personal',this)">🎯 個人投資</button>
-          <button class="ws-acc-btn"         data-account="music"    onclick="selectAddAccount('music',this)">🎵 音樂投資</button>
-          <button class="ws-acc-btn"         data-account="eng"      onclick="selectAddAccount('eng',this)">⚙️ 工程投資</button>
+          <button class="ws-acc-btn active" data-account="myway"    onclick="selectAddAccount('myway',this)">My Way</button>
+          <button class="ws-acc-btn"         data-account="invest"   onclick="selectAddAccount('invest',this)">國泰投資</button>
+          <button class="ws-acc-btn"         data-account="personal" onclick="selectAddAccount('personal',this)">個人投資</button>
+          <button class="ws-acc-btn"         data-account="music"    onclick="selectAddAccount('music',this)">音樂投資</button>
+          <button class="ws-acc-btn"         data-account="eng"      onclick="selectAddAccount('eng',this)">工程投資</button>
         </div>
       </div>
       <div class="ws-field">
@@ -934,10 +1035,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         <div class="cfg-select-row">
           <span class="cfg-select-label">介面色調</span>
           <select class="cfg-select" id="cfg-theme" onchange="selectTheme(this.value)">
-            <option value="cool">灰藍</option>
-            <option value="warm">暖灰</option>
-            <option value="sage">鼠尾草</option>
-            <option value="charcoal">炭黑</option>
+            <option value="cool">象牙</option>
+            <option value="warm">暖砂</option>
+            <option value="sage">石灰</option>
+            <option value="charcoal">深墨</option>
           </select>
         </div>
         <div class="cfg-select-row">
@@ -1011,30 +1112,34 @@ function savePrefs(p){try{localStorage.setItem(PREF_KEY,JSON.stringify(p));}catc
 
 // ══ Theme system ══
 const THEMES={
+  // 象牙 — neutral cream (default)
   cool:{css:`
-    :root{--k900:#0d0d14;--k800:#18192a;--k700:#2b2d42;--k500:#50526e;--k400:#7f8299;--k300:#a6a9bc;--k200:#c2c5d6;--k100:#daddef;--k50:#eceef7;--bg:#c4c7d8;--border:#adb0c8;}
-    .nav{background:linear-gradient(160deg,#0f1020 0%,#1e2038 100%)!important}
-    #auth-screen{background:linear-gradient(160deg,#0f1020 0%,#1e2038 60%,#0f1020 100%)!important}
-    .total-bar,.year-nav{background:linear-gradient(135deg,#0f1020 0%,#222440 100%)!important}
-    .btn-confirm.done{background:#3a5c7a!important}`},
+    :root{--k900:#211d17;--k800:#2f2a22;--k700:#433c30;--k500:#6d6457;--k400:#988e7e;--k300:#b4aa99;--k200:#ccc3b3;--k100:#ddd5c7;--k50:#ece6da;--k0:#faf7f1;--bg:#e7e1d4;--card:#efeae0;--border:#dcd5c7;}
+    .nav{background:linear-gradient(165deg,#2a241c 0%,#1b1712 100%)!important}
+    #auth-screen{background:linear-gradient(165deg,#2a241c 0%,#161310 100%)!important}
+    .total-bar,.year-nav,.wallet-summary-card{background:linear-gradient(160deg,#2a241c 0%,#1c1813 100%)!important}
+    .btn-confirm.done{background:#433c30!important}`},
+  // 暖砂 — golden sand
   warm:{css:`
-    :root{--k900:#090807;--k800:#1a1712;--k700:#332d26;--k500:#5a5047;--k400:#8a8076;--k300:#aba49b;--k200:#c8c0b8;--k100:#ded8d0;--k50:#edeae4;--bg:#cac3bb;--border:#aea7a0;}
-    .nav{background:linear-gradient(160deg,#1a1714 0%,#2e2b28 100%)!important}
-    #auth-screen{background:linear-gradient(160deg,#1a1714 0%,#2e2b28 60%,#1a1714 100%)!important}
-    .total-bar,.year-nav{background:linear-gradient(135deg,#1a1714 0%,#333030 100%)!important}
-    .btn-confirm.done{background:#3b6a56!important}`},
+    :root{--k900:#241d12;--k800:#332a1c;--k700:#473c2a;--k500:#73654f;--k400:#9d8e74;--k300:#bcab8d;--k200:#d2c5aa;--k100:#e0d6c1;--k50:#efe8d8;--k0:#fbf8f0;--bg:#e9e1cd;--card:#f1ebdc;--border:#ddd3bf;}
+    .nav{background:linear-gradient(165deg,#2d2417 0%,#1c160d 100%)!important}
+    #auth-screen{background:linear-gradient(165deg,#2d2417 0%,#171109 100%)!important}
+    .total-bar,.year-nav,.wallet-summary-card{background:linear-gradient(160deg,#2d2417 0%,#1d160e 100%)!important}
+    .btn-confirm.done{background:#473c2a!important}`},
+  // 石灰 — cool greige stone
   sage:{css:`
-    :root{--k900:#080f09;--k800:#141f15;--k700:#253828;--k500:#4a6050;--k400:#7a9080;--k300:#a0b4a6;--k200:#c0d0c4;--k100:#d6e4d8;--k50:#eaf0ea;--bg:#c2cec2;--border:#a8baa8;}
-    .nav{background:linear-gradient(160deg,#111a11 0%,#1e2e1e 100%)!important}
-    #auth-screen{background:linear-gradient(160deg,#111a11 0%,#1e2e1e 60%,#111a11 100%)!important}
-    .total-bar,.year-nav{background:linear-gradient(135deg,#111a11 0%,#253828 100%)!important}
-    .btn-confirm.done{background:#3a6a3a!important}`},
+    :root{--k900:#1e1e19;--k800:#2c2c25;--k700:#3f3e35;--k500:#67665b;--k400:#928f82;--k300:#aea99c;--k200:#c8c4b6;--k100:#d9d5c8;--k50:#e9e6db;--k0:#faf8f2;--bg:#e4e3d8;--card:#eeece3;--border:#d8d5c9;}
+    .nav{background:linear-gradient(165deg,#27261f 0%,#191815 100%)!important}
+    #auth-screen{background:linear-gradient(165deg,#27261f 0%,#151411 100%)!important}
+    .total-bar,.year-nav,.wallet-summary-card{background:linear-gradient(160deg,#27261f 0%,#1a1916 100%)!important}
+    .btn-confirm.done{background:#3f3e35!important}`},
+  // 深墨 — deep-contrast cream
   charcoal:{css:`
-    :root{--k900:#020202;--k800:#0d0d0d;--k700:#1f1f1f;--k500:#444;--k400:#707070;--k300:#999;--k200:#bbb;--k100:#d4d4d4;--k50:#ebebeb;--bg:#bebebe;--border:#9a9a9a;}
-    .nav{background:linear-gradient(160deg,#050505 0%,#181818 100%)!important}
-    #auth-screen{background:linear-gradient(160deg,#050505 0%,#181818 60%,#050505 100%)!important}
-    .total-bar,.year-nav{background:linear-gradient(135deg,#050505 0%,#242424 100%)!important}
-    .btn-confirm.done{background:#3a5a3a!important}`},
+    :root{--k900:#171309;--k800:#241f14;--k700:#3a3326;--k500:#665d4c;--k400:#8f8472;--k300:#ada291;--k200:#cbc1ae;--k100:#ddd3c0;--k50:#ece4d4;--k0:#fbf7ee;--bg:#e3dac6;--card:#efe7d6;--border:#d8cdb7;}
+    .nav{background:linear-gradient(165deg,#221c10 0%,#100c06 100%)!important}
+    #auth-screen{background:linear-gradient(165deg,#221c10 0%,#0d0a05 100%)!important}
+    .total-bar,.year-nav,.wallet-summary-card{background:linear-gradient(160deg,#221c10 0%,#120e07 100%)!important}
+    .btn-confirm.done{background:#3a3326!important}`},
 };
 function applyTheme(id){
   let el=document.getElementById('theme-style');
@@ -1048,9 +1153,9 @@ function selectTheme(id){
 
 // ══ Font family system ══
 const FONTS={
-  system:{family:'-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif',url:null},
+  system:{family:'"Noto Sans TC",-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif',url:null},
   cute:{family:'"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif',url:'https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap'},
-  pro:{family:'"Noto Serif TC",Georgia,serif',url:'https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&display=swap'},
+  pro:{family:'"Noto Serif TC",Georgia,serif',url:null},
 };
 function applyFont(id){
   const f=FONTS[id]||FONTS.system;
@@ -1455,7 +1560,7 @@ function addEntry() {
       <button class="btn-del" onclick="delEntry(${id})">✕</button>
     </div>
     <div class="name-row">
-      <span class="name-icon">✏️</span>
+      
       <input type="text" placeholder="名稱（選填，如：MV製作費）" oninput="setName(${id},this.value)" autocomplete="off">
     </div>
     <div class="seg-label">收入帳戶</div>
@@ -1618,8 +1723,8 @@ function renderAnalysis(){
   document.getElementById('a-active-months').textContent=`${activeMonths} 個月有收入`;
   renderChart(monthly,monthlyMusic,monthlyEng); renderTypeBreakdown(T); renderAlloc(T); renderRecordHistory(records);
 }
-const CHART_LEGEND=`<div style="display:flex;gap:14px;justify-content:center;margin-top:8px"><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k800)"></span>音樂</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#5a5c78"></span>工程</span></div>`;
-const CHART_LEGEND_V2=`<div style="display:flex;gap:12px;justify-content:center;margin-top:8px"><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k800)"></span>音樂</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#5a5c78"></span>工程</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k200)"></span>其他</span></div>`;
+const CHART_LEGEND=`<div style="display:flex;gap:14px;justify-content:center;margin-top:8px"><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k800)"></span>音樂</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#8a8276"></span>工程</span></div>`;
+const CHART_LEGEND_V2=`<div style="display:flex;gap:12px;justify-content:center;margin-top:8px"><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k800)"></span>音樂</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#8a8276"></span>工程</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k200)"></span>其他</span></div>`;
 const CHART_LBLS=['1','2','3','4','5','6','7','8','9','10','11','12'];
 
 function renderChart(monthly,monthlyMusic,monthlyEng){
@@ -1643,7 +1748,7 @@ function renderBarChart(monthly,monthlyMusic,monthlyEng){
     const oH=Math.max(0,totalH-mH-eH);
     const segs=[
       mH?`<div style="height:${mH}px;background:var(--k800);border-radius:${!eH&&!oH?'3px 3px 0 0':'0'}"></div>`:'',
-      eH?`<div style="height:${eH}px;background:#5a5c78;border-radius:${!mH?'3px 3px 0 0':'0'}"></div>`:'',
+      eH?`<div style="height:${eH}px;background:#8a8276;border-radius:${!mH?'3px 3px 0 0':'0'}"></div>`:'',
       oH?`<div style="height:${oH}px;background:${isCur?'var(--k400)':'var(--k200)'};border-radius:${!mH&&!eH?'3px 3px 0 0':'0'}"></div>`:'',
     ].join('');
     return `<div class="chart-col"><div style="width:100%;height:${totalH}px;display:flex;flex-direction:column">${segs}</div><div class="chart-lbl" style="${lblStyle}">${l}</div></div>`;
@@ -1667,7 +1772,7 @@ function renderLineChart(monthly,monthlyMusic,monthlyEng){
   }
   const el=document.getElementById('monthly-chart');
   el.style.cssText='display:block';
-  el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible">${makeLine(monthlyMusic,'var(--k800)')}${makeLine(monthlyEng,'#5a5c78')}</svg><div style="display:flex;margin-top:4px">${CHART_LBLS.map(l=>`<span style="flex:1;font-size:8px;color:var(--label);font-weight:500;text-align:center">${l}</span>`).join('')}</div>${CHART_LEGEND}`;
+  el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible">${makeLine(monthlyMusic,'var(--k800)')}${makeLine(monthlyEng,'#8a8276')}</svg><div style="display:flex;margin-top:4px">${CHART_LBLS.map(l=>`<span style="flex:1;font-size:8px;color:var(--label);font-weight:500;text-align:center">${l}</span>`).join('')}</div>${CHART_LEGEND}`;
 }
 
 function renderAreaChart(monthly,monthlyMusic,monthlyEng){
@@ -1686,10 +1791,10 @@ function renderAreaChart(monthly,monthlyMusic,monthlyEng){
   }
   const el=document.getElementById('monthly-chart');
   el.style.cssText='display:block';
-  el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible"><defs><linearGradient id="ag-m" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--k800)" stop-opacity="0.28"/><stop offset="100%" stop-color="var(--k800)" stop-opacity="0.03"/></linearGradient><linearGradient id="ag-e" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5a5c78" stop-opacity="0.28"/><stop offset="100%" stop-color="#5a5c78" stop-opacity="0.03"/></linearGradient></defs>${makeArea(monthlyMusic,'var(--k800)','ag-m')}${makeArea(monthlyEng,'#5a5c78','ag-e')}</svg><div style="display:flex;margin-top:4px">${CHART_LBLS.map(l=>`<span style="flex:1;font-size:8px;color:var(--label);font-weight:500;text-align:center">${l}</span>`).join('')}</div>${CHART_LEGEND}`;
+  el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible"><defs><linearGradient id="ag-m" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--k800)" stop-opacity="0.28"/><stop offset="100%" stop-color="var(--k800)" stop-opacity="0.03"/></linearGradient><linearGradient id="ag-e" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8a8276" stop-opacity="0.28"/><stop offset="100%" stop-color="#8a8276" stop-opacity="0.03"/></linearGradient></defs>${makeArea(monthlyMusic,'var(--k800)','ag-m')}${makeArea(monthlyEng,'#8a8276','ag-e')}</svg><div style="display:flex;margin-top:4px">${CHART_LBLS.map(l=>`<span style="flex:1;font-size:8px;color:var(--label);font-weight:500;text-align:center">${l}</span>`).join('')}</div>${CHART_LEGEND}`;
 }
 function renderTypeBreakdown(T){
-  const types=[{name:'音樂案',val:T.musicInc,cls:'var(--k800)'},{name:'工程案',val:T.engInc,cls:'#5a5c78'},{name:'其他',val:T.otherInc,cls:'var(--k500)'}].filter(t=>t.val>0);
+  const types=[{name:'音樂案',val:T.musicInc,cls:'var(--k800)'},{name:'工程案',val:T.engInc,cls:'#8a8276'},{name:'其他',val:T.otherInc,cls:'var(--k500)'}].filter(t=>t.val>0);
   if(!types.length){document.getElementById('type-breakdown').innerHTML='<div class="no-data">尚無紀錄</div>';return;}
   const tot=types.reduce((s,t)=>s+t.val,0)||1;
   document.getElementById('type-breakdown').innerHTML=types.map(t=>{const p=Math.round(t.val/tot*100);return `<div class="type-row"><div class="type-top"><span class="type-name">${t.name}</span><span><span class="type-amt">${fmt(t.val)}</span><span class="type-pct">${p}%</span></span></div><div class="type-track"><div class="type-fill" style="width:${p}%;background:${t.cls}"></div></div></div>`;}).join('');
@@ -1886,11 +1991,11 @@ const WISH_KEY     = 'wish_list_v1';
 const INIT_BAL_KEY = 'init_balances_v1';
 
 const ACCOUNTS = [
-  { id:'myway',    name:'中信 My Way',   icon:'💳', field:'myway',    accent:'var(--k900)' },
-  { id:'invest',   name:'國泰 投資帳戶', icon:'📈', field:'invest',   accent:'var(--k700)' },
-  { id:'personal', name:'個人投資',      icon:'🎯', field:'personal', accent:'var(--k500)' },
-  { id:'music',    name:'音樂投資',      icon:'🎵', field:'music',    accent:'var(--k800)' },
-  { id:'eng',      name:'工程投資',      icon:'⚙️', field:'eng',      accent:'#5a5c78'    },
+  { id:'myway',    name:'中信 My Way',   icon:'', field:'myway',    accent:'var(--k900)' },
+  { id:'invest',   name:'國泰 投資帳戶', icon:'', field:'invest',   accent:'var(--k700)' },
+  { id:'personal', name:'個人投資',      icon:'', field:'personal', accent:'var(--k500)' },
+  { id:'music',    name:'音樂投資',      icon:'', field:'music',    accent:'var(--k800)' },
+  { id:'eng',      name:'工程投資',      icon:'', field:'eng',      accent:'#8a8276'    },
 ];
 
 function getSpending(){ try{return JSON.parse(localStorage.getItem(SPEND_KEY)||'[]');}catch{return[];} }
@@ -2612,7 +2717,7 @@ function renderWallet(){
         <div class="wc-header" onclick="toggleWalletCard('${acc.id}')">
           <div class="wc-accent" style="background:${acc.accent}"></div>
           <div class="wc-info">
-            <div class="wc-name">${acc.icon} ${acc.name}</div>
+            <div class="wc-name">${acc.name}</div>
             <div class="wc-bal${bal<0?' negative':''}" id="wc-bal-${acc.id}">${fmt(bal)}</div>
             <div class="wc-achieve-hint" id="wc-achieve-hint-${acc.id}" style="display:${hasAchieved?'':'none'}"><span class="wc-achieve-dot"></span><span class="wc-achieve-label">可購買</span></div>
           </div>
@@ -2665,9 +2770,9 @@ function copyResults(){
   const myway=total*0.7;
   const musicAmt=list.filter(e=>e.type==='music').reduce((s,e)=>s+e.amount,0)*0.1;
   const engAmt=list.filter(e=>e.type==='engineering').reduce((s,e)=>s+e.amount,0)*0.1;
-  let lines=['📊 收入分配結果','─────────────',`💳 中信 My Way：${fmt(myway)}`,`📈 國泰 投資帳戶：${fmt(each)}`,`🎯 個人投資：${fmt(each)}`];
-  if(musicAmt>0) lines.push(`🎵 音樂投資：${fmt(musicAmt)}`);
-  if(engAmt>0)   lines.push(`⚙️ 工程投資：${fmt(engAmt)}`);
+  let lines=['收入分配結果','─────────────',`中信 My Way：${fmt(myway)}`,`國泰 投資帳戶：${fmt(each)}`,`個人投資：${fmt(each)}`];
+  if(musicAmt>0) lines.push(`音樂投資：${fmt(musicAmt)}`);
+  if(engAmt>0)   lines.push(`工程投資：${fmt(engAmt)}`);
   lines.push('─────────────',`總計：${fmt(total)}`);
   navigator.clipboard.writeText(lines.join('\n')).then(()=>{
     const btn=document.getElementById('btn-copy-results');
