@@ -34,30 +34,28 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="收入分配">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#e7e1d4">
+<meta name="theme-color" content="#14171d">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet">
 
 <style>
 :root {
-  /* warm cream monochrome — ink (k900) → cream (k0) */
-  --k900:#211d17; --k800:#2f2a22; --k700:#433c30;
-  --k500:#6d6457; --k400:#988e7e; --k300:#b4aa99;
-  --k200:#ccc3b3; --k100:#ddd5c7; --k50:#ece6da; --k0:#faf7f1;
-  --bg:#e7e1d4; --card:#efeae0; --border:#dcd5c7;
+  /* crisp neutral monochrome — ink (k900) → white (k0) */
+  --k900:#15171c; --k800:#22262d; --k700:#363b44;
+  --k500:#646b78; --k400:#9098a4; --k300:#b8bec8;
+  --k200:#d4d9e0; --k100:#e6e9ee; --k50:#f1f3f6; --k0:#ffffff;
+  --bg:#f4f5f7; --card:#ffffff; --border:#e6e8ec;
   --text:var(--k900); --text2:var(--k800); --text3:var(--k500); --label:var(--k400);
   --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
-  /* neumorphic dual shadow — light from top-left, warm shadow bottom-right */
-  --nm-d:178,164,142; --nm-l:255,254,249;
-  --sh: 6px 6px 15px rgba(var(--nm-d),0.5), -6px -6px 14px rgba(var(--nm-l),0.9);
-  --sh-sm: 3px 3px 8px rgba(var(--nm-d),0.42), -3px -3px 7px rgba(var(--nm-l),0.85);
-  --sh-in: inset 3px 3px 7px rgba(var(--nm-d),0.5), inset -3px -3px 6px rgba(var(--nm-l),0.85);
-  --sh-dark: 0 12px 30px rgba(33,29,23,0.26), 0 2px 7px rgba(33,29,23,0.16);
-  --r: 20px;
+  /* crisp shadows — tight, neutral */
+  --sh: 0 1px 2px rgba(16,18,24,0.04), 0 2px 8px rgba(16,18,24,0.05);
+  --sh-sm: 0 1px 2px rgba(16,18,24,0.06);
+  --sh-dark: 0 10px 30px rgba(16,18,24,0.20), 0 2px 6px rgba(16,18,24,0.10);
+  --r: 16px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;background:var(--bg);color:var(--text)}
@@ -179,7 +177,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .accent-cathay::before{background:var(--k700)} .accent-cathay .rv{color:var(--k700)}
 .accent-sub1::before{background:var(--k500)} .accent-sub1 .rv{color:var(--k500)}
 .accent-mus::before{background:var(--k800)} .accent-mus .rv{color:var(--k800)}
-.accent-eng::before{background:#8a8276} .accent-eng .rv{color:#8a8276}
+.accent-eng::before{background:#9098a4} .accent-eng .rv{color:#9098a4}
 
 /* ── Steps ── */
 .steps-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:4px 16px;box-shadow:var(--sh)}
@@ -250,7 +248,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .al-inv::before{background:var(--k700)} .al-inv .alloc-val{color:var(--k700)}
 .al-per::before{background:var(--k500)} .al-per .alloc-val{color:var(--k500)}
 .al-mus::before{background:var(--k800)} .al-mus .alloc-val{color:var(--k800)}
-.al-eng::before{background:#8a8276} .al-eng .alloc-val{color:#8a8276}
+.al-eng::before{background:#9098a4} .al-eng .alloc-val{color:#9098a4}
 .no-data{color:var(--k300);font-size:13px;text-align:center;padding:32px 0}
 
 /* ── Date-grouped records ── */
@@ -566,95 +564,98 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .confirm-btn.ok{color:#dc2626;font-weight:600}
 
 /* ════════════════════════════════════════════════════════
-   EDITORIAL CREAM SKIN — neumorphic · monochrome · serif
+   CRISP LIGHT SKIN — clean white cards · high contrast · modern sans
    (final layer; supersedes earlier component styling)
    ════════════════════════════════════════════════════════ */
 html,body{font-family:"Noto Sans TC",-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 
-/* — Playfair Display for all Latin numerals / currency — */
+/* — Manrope tabular numerals for all amounts — */
 .total-bar .tv,.wc-bal,.sum-card .sc-val,.yn-label,.dg-total,.dg-rec-amt,
 .rrow .rv,.amt-row input,.alloc-val,.type-amt,.wsm-val,.si-amt,
-.sp-year-total,.step-val,.wi-pct,.type-pct,.entry-num{
-  font-family:"Playfair Display",Georgia,serif!important;
-  font-weight:600!important;letter-spacing:0!important;
-  font-feature-settings:"lnum" 1,"tnum" 1;
+.sp-year-total,.step-val,.wi-pct,.type-pct,.sp-year-total,.dg-rec-amt{
+  font-family:"Manrope","Noto Sans TC",-apple-system,sans-serif!important;
+  font-feature-settings:"tnum" 1,"lnum" 1;font-weight:700!important;letter-spacing:-0.2px!important;
 }
-.amt-row input::placeholder{font-family:"Playfair Display",Georgia,serif!important}
-.total-bar .tv,.wc-bal,.yn-label{font-weight:600!important;letter-spacing:-0.3px!important}
+.amt-row input::placeholder{font-family:"Manrope",sans-serif!important;font-weight:600!important}
+.total-bar .tv,.wc-bal,.yn-label{letter-spacing:-0.6px!important}
 
-/* — Noto Serif TC for editorial Chinese headings — */
+/* — Headings: clean grotesk, tight tracking — */
 .nav-title,.auth-title,.ws-title,.settings-nav-title,#confirm-title{
-  font-family:"Noto Serif TC","Noto Sans TC",serif!important;font-weight:600!important;letter-spacing:0.5px!important;
+  font-family:"Manrope","Noto Sans TC",sans-serif!important;font-weight:700!important;letter-spacing:-0.2px!important;
 }
 
-/* — Refined section labels: small-caps tracked — */
-.sec,.wc-name,.wc-sec-label,.ws-label,.settings-sec-title,.chart-title,
-.sum-card .sc-label,.entry-num,.tl,.total-bar .tl,.yn-sub,.wsm-label{
-  letter-spacing:1.4px!important;font-weight:600!important;
+/* — Tracked uppercase labels — */
+.sec,.settings-sec-title,.chart-title,.sum-card .sc-label,.entry-num,
+.total-bar .tl,.yn-sub,.wsm-label,.wc-name,.ws-label,.wc-sec-label{
+  letter-spacing:0.8px!important;font-weight:700!important;
 }
 
 /* — Canvas — */
 body{background:var(--bg)}
 #pages-viewport{background:var(--bg)}
 
-/* — Top chrome: seamless ink, hairline highlight — */
-.nav{border-bottom:none!important;box-shadow:0 1px 0 rgba(255,255,255,0.05),0 6px 22px rgba(33,29,23,0.10)}
-.tabbar{border-top:none!important;box-shadow:0 -2px 18px rgba(33,29,23,0.06)}
-.nav-icon,.auth-icon{background:rgba(255,255,255,0.06)!important;border-color:rgba(255,255,255,0.12)!important}
-
-/* — Neumorphic raised surfaces (no borders, soft dual shadow) — */
+/* — Crisp white cards: hairline border + tight soft shadow — */
 .entry,.results-card,.steps-card,.transfer-card,.summary-grid .sum-card,
 .chart-wrap,.type-list,.alloc-card,.date-group,.wallet-card,.settings-list{
-  border:none!important;background:var(--card)!important;box-shadow:var(--sh)!important;
+  border:1px solid var(--border)!important;background:var(--card)!important;box-shadow:var(--sh)!important;
 }
-.sum-card.dark{background:var(--card)!important}
-.sum-card.dark .sc-label{color:var(--label)!important}
-.sum-card.dark .sc-val{color:var(--text)!important}
-.sum-card.dark .sc-sub{color:var(--label)!important}
+.sum-card.dark{background:#14171d!important;border-color:#14171d!important}
+.sum-card.dark .sc-label{color:rgba(255,255,255,0.55)!important}
+.sum-card.dark .sc-val{color:#fff!important}
+.sum-card.dark .sc-sub{color:rgba(255,255,255,0.45)!important}
 
-/* — Floating ink panels — */
+/* — Floating dark hero panels — */
 .total-bar,.year-nav,.wallet-summary-card{border:none!important;box-shadow:var(--sh-dark)!important}
 
-/* — Neumorphic inset fields & segmented controls — */
-.amt-row,.ws-input{border:none!important;background:var(--bg)!important;box-shadow:var(--sh-in)!important}
-.amt-row:focus-within,.ws-input:focus{box-shadow:var(--sh-in),0 0 0 2px rgba(67,60,48,0.22)!important}
-.seg{border:none!important;background:var(--bg)!important;box-shadow:var(--sh-in)!important}
-.cfg-select{border:none!important;background:var(--bg)!important;box-shadow:var(--sh-in)!important}
+/* — Fields & selects: white, hairline, focus ring — */
+.amt-row,.ws-input{border:1px solid var(--border)!important;background:var(--card)!important;box-shadow:none!important}
+.amt-row:focus-within,.ws-input:focus{border-color:var(--k800)!important;box-shadow:0 0 0 3px rgba(16,18,24,0.10)!important}
+.seg{border:1px solid var(--border)!important;background:var(--k50)!important;box-shadow:none!important}
+.cfg-select{border:1px solid var(--border)!important;background:var(--card)!important;box-shadow:none!important}
 input[type=date].ws-input,input[type=number].ws-input{color:var(--text)}
+
+/* — Segmented control: ink active pill — */
+.seg-pill{background:var(--k900)!important}
+.seg-btn.on{color:#fff!important}
 
 /* — Buttons — */
 .btn-add,.wc-btn-add{border:1px dashed var(--k300)!important;background:transparent!important;box-shadow:none!important}
-.btn-add:active,.wc-btn-add:active{background:rgba(33,29,23,0.04)!important}
-.btn-transfer{border:none!important;box-shadow:var(--sh-sm)!important}
+.btn-add:active,.wc-btn-add:active{background:var(--k50)!important}
+.btn-transfer{border:1px solid var(--border)!important;box-shadow:none!important}
 .btn-import{background:var(--card)!important}
-.btn-copy-results{border:none!important;background:var(--card)!important;box-shadow:var(--sh-sm)!important}
+.btn-copy-results{border:1px solid var(--border)!important;background:var(--card)!important;box-shadow:none!important}
 .nav-reset{border-radius:9px}
 
-/* — Account chips: raised pebbles — */
-.ws-acc-btn{border:none!important;background:var(--card)!important;box-shadow:var(--sh-sm)!important}
-.ws-acc-btn.active{background:var(--k900)!important;box-shadow:inset 2px 2px 5px rgba(0,0,0,0.3)!important}
+/* — Account chips — */
+.ws-acc-btn{border:1px solid var(--border)!important;background:var(--card)!important;box-shadow:none!important}
+.ws-acc-btn.active{background:var(--k900)!important;color:#fff!important;border-color:var(--k900)!important;box-shadow:none!important}
 
 /* — Progress / accent strokes → ink monochrome — */
-.type-fill{background:var(--k800)!important}
+.type-fill{background:var(--k900)!important}
 .wish-fill{background:var(--k700)!important}
 .wish-fill.full{background:var(--k900)!important}
 .type-track,.wish-track{background:var(--k100)!important}
+.accent-eng::before,.al-eng::before{background:var(--k500)!important}
+.accent-eng .rv,.al-eng .alloc-val{color:var(--k500)!important}
 
-/* — Dark-panel accents kept warm (no off-palette blues) — */
-.wsm-avail{color:#d8c9a6!important}
-.wsm-avail.neg{color:#e0a08a!important}
-.sync-badge.synced{color:#cdbf9e!important}
+/* — Dark-panel accents (neutral, no warm tint) — */
+.wsm-avail{color:#fff!important}
+.wsm-avail.neg{color:#ff8f8f!important}
+.sync-badge.synced{color:#9fb0c4!important}
 
-/* — Rounder, calmer corners — */
+/* — Crisp corners — */
 .entry,.results-card,.steps-card,.transfer-card,.wallet-card,.chart-wrap,
 .type-list,.alloc-card,.date-group,.total-bar,.year-nav,.sum-card,
-.settings-list,.wallet-summary-card,.confirm-box,.btn-confirm,.ws-confirm{border-radius:20px!important}
+.settings-list,.wallet-summary-card,.confirm-box,.btn-confirm,.ws-confirm{border-radius:16px!important}
 .results-card,.type-list,.alloc-card,.date-group,.steps-card,.settings-list{overflow:hidden}
 
-/* — Auth screen polish — */
-.btn-google{border-radius:16px!important;box-shadow:0 8px 24px rgba(33,29,23,0.28)!important}
+/* — Tab bar stays dark chrome, ink-free icons crisp — */
+.tabbar{box-shadow:0 -1px 0 rgba(255,255,255,0.04)}
 
-/* — Smoother, springier global motion — */
+/* — Auth screen — */
+.btn-google{border-radius:14px!important;box-shadow:0 8px 24px rgba(16,18,24,0.22)!important}
+
+/* — Snappy, modern motion — */
 *{transition-timing-function:cubic-bezier(.32,.72,0,1)}
 .page{scroll-behavior:smooth}
 </style>
@@ -1035,10 +1036,10 @@ input[type=date].ws-input,input[type=number].ws-input{color:var(--text)}
         <div class="cfg-select-row">
           <span class="cfg-select-label">介面色調</span>
           <select class="cfg-select" id="cfg-theme" onchange="selectTheme(this.value)">
-            <option value="cool">象牙</option>
-            <option value="warm">暖砂</option>
-            <option value="sage">石灰</option>
-            <option value="charcoal">深墨</option>
+            <option value="cool">雲白</option>
+            <option value="warm">暖白</option>
+            <option value="sage">霧灰</option>
+            <option value="charcoal">石墨</option>
           </select>
         </div>
         <div class="cfg-select-row">
@@ -1112,34 +1113,34 @@ function savePrefs(p){try{localStorage.setItem(PREF_KEY,JSON.stringify(p));}catc
 
 // ══ Theme system ══
 const THEMES={
-  // 象牙 — neutral cream (default)
+  // 雲白 — cool neutral white (default)
   cool:{css:`
-    :root{--k900:#211d17;--k800:#2f2a22;--k700:#433c30;--k500:#6d6457;--k400:#988e7e;--k300:#b4aa99;--k200:#ccc3b3;--k100:#ddd5c7;--k50:#ece6da;--k0:#faf7f1;--bg:#e7e1d4;--card:#efeae0;--border:#dcd5c7;}
-    .nav{background:linear-gradient(165deg,#2a241c 0%,#1b1712 100%)!important}
-    #auth-screen{background:linear-gradient(165deg,#2a241c 0%,#161310 100%)!important}
-    .total-bar,.year-nav,.wallet-summary-card{background:linear-gradient(160deg,#2a241c 0%,#1c1813 100%)!important}
-    .btn-confirm.done{background:#433c30!important}`},
-  // 暖砂 — golden sand
+    :root{--k900:#15171c;--k800:#22262d;--k700:#363b44;--k500:#646b78;--k400:#9098a4;--k300:#b8bec8;--k200:#d4d9e0;--k100:#e6e9ee;--k50:#f1f3f6;--k0:#ffffff;--bg:#f4f5f7;--card:#ffffff;--border:#e6e8ec;}
+    .nav{background:#14171d!important}
+    #auth-screen{background:linear-gradient(165deg,#1c2029 0%,#0c0e13 100%)!important}
+    .total-bar,.year-nav,.wallet-summary-card{background:#14171d!important}
+    .btn-confirm.done{background:#22262d!important}`},
+  // 暖白 — warm white
   warm:{css:`
-    :root{--k900:#241d12;--k800:#332a1c;--k700:#473c2a;--k500:#73654f;--k400:#9d8e74;--k300:#bcab8d;--k200:#d2c5aa;--k100:#e0d6c1;--k50:#efe8d8;--k0:#fbf8f0;--bg:#e9e1cd;--card:#f1ebdc;--border:#ddd3bf;}
-    .nav{background:linear-gradient(165deg,#2d2417 0%,#1c160d 100%)!important}
-    #auth-screen{background:linear-gradient(165deg,#2d2417 0%,#171109 100%)!important}
-    .total-bar,.year-nav,.wallet-summary-card{background:linear-gradient(160deg,#2d2417 0%,#1d160e 100%)!important}
-    .btn-confirm.done{background:#473c2a!important}`},
-  // 石灰 — cool greige stone
+    :root{--k900:#1c1815;--k800:#2a2521;--k700:#3e3832;--k500:#6e665c;--k400:#9b9388;--k300:#c0b8ad;--k200:#dad3c9;--k100:#ebe6df;--k50:#f5f1ec;--k0:#ffffff;--bg:#f6f3ef;--card:#ffffff;--border:#ece6df;}
+    .nav{background:#1c1815!important}
+    #auth-screen{background:linear-gradient(165deg,#241f1a 0%,#110e0b 100%)!important}
+    .total-bar,.year-nav,.wallet-summary-card{background:#1c1815!important}
+    .btn-confirm.done{background:#2a2521!important}`},
+  // 霧灰 — cool grey canvas
   sage:{css:`
-    :root{--k900:#1e1e19;--k800:#2c2c25;--k700:#3f3e35;--k500:#67665b;--k400:#928f82;--k300:#aea99c;--k200:#c8c4b6;--k100:#d9d5c8;--k50:#e9e6db;--k0:#faf8f2;--bg:#e4e3d8;--card:#eeece3;--border:#d8d5c9;}
-    .nav{background:linear-gradient(165deg,#27261f 0%,#191815 100%)!important}
-    #auth-screen{background:linear-gradient(165deg,#27261f 0%,#151411 100%)!important}
-    .total-bar,.year-nav,.wallet-summary-card{background:linear-gradient(160deg,#27261f 0%,#1a1916 100%)!important}
-    .btn-confirm.done{background:#3f3e35!important}`},
-  // 深墨 — deep-contrast cream
+    :root{--k900:#171a1e;--k800:#252a30;--k700:#3a4048;--k500:#666e78;--k400:#939aa3;--k300:#bbc1c9;--k200:#d6dae0;--k100:#e8ebef;--k50:#f2f4f6;--k0:#ffffff;--bg:#eceef2;--card:#ffffff;--border:#e2e6eb;}
+    .nav{background:#161a20!important}
+    #auth-screen{background:linear-gradient(165deg,#1d222a 0%,#0d1014 100%)!important}
+    .total-bar,.year-nav,.wallet-summary-card{background:#161a20!important}
+    .btn-confirm.done{background:#252a30!important}`},
+  // 石墨 — high-contrast (near-black panels)
   charcoal:{css:`
-    :root{--k900:#171309;--k800:#241f14;--k700:#3a3326;--k500:#665d4c;--k400:#8f8472;--k300:#ada291;--k200:#cbc1ae;--k100:#ddd3c0;--k50:#ece4d4;--k0:#fbf7ee;--bg:#e3dac6;--card:#efe7d6;--border:#d8cdb7;}
-    .nav{background:linear-gradient(165deg,#221c10 0%,#100c06 100%)!important}
-    #auth-screen{background:linear-gradient(165deg,#221c10 0%,#0d0a05 100%)!important}
-    .total-bar,.year-nav,.wallet-summary-card{background:linear-gradient(160deg,#221c10 0%,#120e07 100%)!important}
-    .btn-confirm.done{background:#3a3326!important}`},
+    :root{--k900:#0e1014;--k800:#1c1f25;--k700:#33373f;--k500:#5f6670;--k400:#8b929c;--k300:#b4bac3;--k200:#d2d7dd;--k100:#e6e9ed;--k50:#f1f3f5;--k0:#ffffff;--bg:#e9ebef;--card:#ffffff;--border:#dfe3e8;}
+    .nav{background:#0a0c0f!important}
+    #auth-screen{background:linear-gradient(165deg,#15181d 0%,#050608 100%)!important}
+    .total-bar,.year-nav,.wallet-summary-card{background:#0a0c0f!important}
+    .btn-confirm.done{background:#1c1f25!important}`},
 };
 function applyTheme(id){
   let el=document.getElementById('theme-style');
@@ -1723,8 +1724,8 @@ function renderAnalysis(){
   document.getElementById('a-active-months').textContent=`${activeMonths} 個月有收入`;
   renderChart(monthly,monthlyMusic,monthlyEng); renderTypeBreakdown(T); renderAlloc(T); renderRecordHistory(records);
 }
-const CHART_LEGEND=`<div style="display:flex;gap:14px;justify-content:center;margin-top:8px"><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k800)"></span>音樂</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#8a8276"></span>工程</span></div>`;
-const CHART_LEGEND_V2=`<div style="display:flex;gap:12px;justify-content:center;margin-top:8px"><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k800)"></span>音樂</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#8a8276"></span>工程</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k200)"></span>其他</span></div>`;
+const CHART_LEGEND=`<div style="display:flex;gap:14px;justify-content:center;margin-top:8px"><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k800)"></span>音樂</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#9098a4"></span>工程</span></div>`;
+const CHART_LEGEND_V2=`<div style="display:flex;gap:12px;justify-content:center;margin-top:8px"><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k800)"></span>音樂</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:#9098a4"></span>工程</span><span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--label)"><span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--k200)"></span>其他</span></div>`;
 const CHART_LBLS=['1','2','3','4','5','6','7','8','9','10','11','12'];
 
 function renderChart(monthly,monthlyMusic,monthlyEng){
@@ -1748,7 +1749,7 @@ function renderBarChart(monthly,monthlyMusic,monthlyEng){
     const oH=Math.max(0,totalH-mH-eH);
     const segs=[
       mH?`<div style="height:${mH}px;background:var(--k800);border-radius:${!eH&&!oH?'3px 3px 0 0':'0'}"></div>`:'',
-      eH?`<div style="height:${eH}px;background:#8a8276;border-radius:${!mH?'3px 3px 0 0':'0'}"></div>`:'',
+      eH?`<div style="height:${eH}px;background:#9098a4;border-radius:${!mH?'3px 3px 0 0':'0'}"></div>`:'',
       oH?`<div style="height:${oH}px;background:${isCur?'var(--k400)':'var(--k200)'};border-radius:${!mH&&!eH?'3px 3px 0 0':'0'}"></div>`:'',
     ].join('');
     return `<div class="chart-col"><div style="width:100%;height:${totalH}px;display:flex;flex-direction:column">${segs}</div><div class="chart-lbl" style="${lblStyle}">${l}</div></div>`;
@@ -1772,7 +1773,7 @@ function renderLineChart(monthly,monthlyMusic,monthlyEng){
   }
   const el=document.getElementById('monthly-chart');
   el.style.cssText='display:block';
-  el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible">${makeLine(monthlyMusic,'var(--k800)')}${makeLine(monthlyEng,'#8a8276')}</svg><div style="display:flex;margin-top:4px">${CHART_LBLS.map(l=>`<span style="flex:1;font-size:8px;color:var(--label);font-weight:500;text-align:center">${l}</span>`).join('')}</div>${CHART_LEGEND}`;
+  el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible">${makeLine(monthlyMusic,'var(--k800)')}${makeLine(monthlyEng,'#9098a4')}</svg><div style="display:flex;margin-top:4px">${CHART_LBLS.map(l=>`<span style="flex:1;font-size:8px;color:var(--label);font-weight:500;text-align:center">${l}</span>`).join('')}</div>${CHART_LEGEND}`;
 }
 
 function renderAreaChart(monthly,monthlyMusic,monthlyEng){
@@ -1791,10 +1792,10 @@ function renderAreaChart(monthly,monthlyMusic,monthlyEng){
   }
   const el=document.getElementById('monthly-chart');
   el.style.cssText='display:block';
-  el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible"><defs><linearGradient id="ag-m" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--k800)" stop-opacity="0.28"/><stop offset="100%" stop-color="var(--k800)" stop-opacity="0.03"/></linearGradient><linearGradient id="ag-e" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8a8276" stop-opacity="0.28"/><stop offset="100%" stop-color="#8a8276" stop-opacity="0.03"/></linearGradient></defs>${makeArea(monthlyMusic,'var(--k800)','ag-m')}${makeArea(monthlyEng,'#8a8276','ag-e')}</svg><div style="display:flex;margin-top:4px">${CHART_LBLS.map(l=>`<span style="flex:1;font-size:8px;color:var(--label);font-weight:500;text-align:center">${l}</span>`).join('')}</div>${CHART_LEGEND}`;
+  el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible"><defs><linearGradient id="ag-m" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--k800)" stop-opacity="0.28"/><stop offset="100%" stop-color="var(--k800)" stop-opacity="0.03"/></linearGradient><linearGradient id="ag-e" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9098a4" stop-opacity="0.28"/><stop offset="100%" stop-color="#9098a4" stop-opacity="0.03"/></linearGradient></defs>${makeArea(monthlyMusic,'var(--k800)','ag-m')}${makeArea(monthlyEng,'#9098a4','ag-e')}</svg><div style="display:flex;margin-top:4px">${CHART_LBLS.map(l=>`<span style="flex:1;font-size:8px;color:var(--label);font-weight:500;text-align:center">${l}</span>`).join('')}</div>${CHART_LEGEND}`;
 }
 function renderTypeBreakdown(T){
-  const types=[{name:'音樂案',val:T.musicInc,cls:'var(--k800)'},{name:'工程案',val:T.engInc,cls:'#8a8276'},{name:'其他',val:T.otherInc,cls:'var(--k500)'}].filter(t=>t.val>0);
+  const types=[{name:'音樂案',val:T.musicInc,cls:'var(--k800)'},{name:'工程案',val:T.engInc,cls:'#9098a4'},{name:'其他',val:T.otherInc,cls:'var(--k500)'}].filter(t=>t.val>0);
   if(!types.length){document.getElementById('type-breakdown').innerHTML='<div class="no-data">尚無紀錄</div>';return;}
   const tot=types.reduce((s,t)=>s+t.val,0)||1;
   document.getElementById('type-breakdown').innerHTML=types.map(t=>{const p=Math.round(t.val/tot*100);return `<div class="type-row"><div class="type-top"><span class="type-name">${t.name}</span><span><span class="type-amt">${fmt(t.val)}</span><span class="type-pct">${p}%</span></span></div><div class="type-track"><div class="type-fill" style="width:${p}%;background:${t.cls}"></div></div></div>`;}).join('');
@@ -1995,7 +1996,7 @@ const ACCOUNTS = [
   { id:'invest',   name:'國泰 投資帳戶', icon:'', field:'invest',   accent:'var(--k700)' },
   { id:'personal', name:'個人投資',      icon:'', field:'personal', accent:'var(--k500)' },
   { id:'music',    name:'音樂投資',      icon:'', field:'music',    accent:'var(--k800)' },
-  { id:'eng',      name:'工程投資',      icon:'', field:'eng',      accent:'#8a8276'    },
+  { id:'eng',      name:'工程投資',      icon:'', field:'eng',      accent:'#9098a4'    },
 ];
 
 function getSpending(){ try{return JSON.parse(localStorage.getItem(SPEND_KEY)||'[]');}catch{return[];} }
