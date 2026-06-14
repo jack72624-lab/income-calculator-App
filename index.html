@@ -73,6 +73,17 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .btn-google svg{flex-shrink:0}
 .auth-note{font-size:11px;color:var(--k500);text-align:center;margin-top:20px;line-height:1.6;max-width:260px}
 
+/* 初始判斷登入狀態（含 redirect 結果處理）期間顯示 spinner，
+   避免畫面先閃一下登入畫面再跳轉到主畫面的突兀轉場 */
+.auth-spinner{display:none;width:28px;height:28px;border:2.5px solid rgba(255,255,255,0.15);border-top-color:rgba(255,255,255,0.65);border-radius:50%;animation:auth-spin 0.8s linear infinite}
+@keyframes auth-spin{to{transform:rotate(360deg)}}
+#auth-screen.auth-loading .auth-spinner{display:block}
+#auth-screen.auth-loading .auth-icon,
+#auth-screen.auth-loading .auth-title,
+#auth-screen.auth-loading .auth-sub,
+#auth-screen.auth-loading .btn-google,
+#auth-screen.auth-loading .auth-note{display:none}
+
 /* ── Shell ── */
 #shell{display:flex;flex-direction:column;height:100%;padding-top:var(--safe-top)}
 
@@ -663,7 +674,8 @@ input[type=date].ws-input,input[type=number].ws-input{color:var(--text)}
 <body style="font-family: &quot;Noto Sans TC&quot;">
 
 <!-- ── Auth Screen ── -->
-<div id="auth-screen">
+<div id="auth-screen" class="auth-loading">
+  <div class="auth-spinner"></div>
   <div class="auth-icon">
     <svg viewBox="0 0 32 32" fill="none" width="32" height="32">
       <rect x="2" y="8" width="28" height="19" rx="3" stroke="rgba(255,255,255,0.7)" stroke-width="2.5"/>
@@ -1242,6 +1254,7 @@ function setSyncStatus(s) {
 
 // ══ Auth ══
 auth.onAuthStateChanged(user => {
+  document.getElementById('auth-screen').classList.remove('auth-loading');
   if (user) {
     currentUser = user;
     updateUserUI(user);
@@ -1262,22 +1275,6 @@ function _isIOS() {
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
-// 偵測「加到主畫面」的 standalone 模式
-// iOS standalone WebView 與 Safari 的 sessionStorage 是分開的容器，
-// signInWithRedirect 跳轉到 Google 後常無法導回 standalone 容器，畫面會卡在 Google/Safari。
-// 因此這種情況改為在 Safari 開啟同一網址完成登入；登入後的 session 存在
-// IndexedDB（browserLocalPersistence，跨 Safari 與主畫面 App 共用），
-// 之後從主畫面開啟即可直接保持登入狀態。
-function _isStandalone() {
-  return window.navigator.standalone === true;
-}
-
-// 主畫面模式下，把登入按鈕改為「在 Safari 開啟登入」提示
-if (_isIOS() && _isStandalone()) {
-  document.getElementById('btn-google-label').textContent = '在 Safari 中登入';
-  document.getElementById('auth-note').textContent = '首次登入請在 Safari 完成，登入成功後回到主畫面即可自動同步';
-}
-
 // 啟動時處理 iOS redirect 登入回傳
 auth.getRedirectResult().then(r => {
   if (r && r.user) _signingIn = false;
@@ -1285,11 +1282,6 @@ auth.getRedirectResult().then(r => {
 
 function signInWithGoogle() {
   if (_signingIn) return;
-  // 主畫面 standalone 模式：跳轉去 Google 登入後無法導回，改為在 Safari 開啟同網址登入
-  if (_isIOS() && _isStandalone()) {
-    window.open(location.href, '_blank');
-    return;
-  }
   _signingIn = true;
   const provider = new firebase.auth.GoogleAuthProvider();
   if (_isIOS()) {
