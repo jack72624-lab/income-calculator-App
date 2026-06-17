@@ -878,6 +878,7 @@ input[type=date].ws-input,input[type=number].ws-input{color:var(--text)}
           <button class="ws-acc-btn"         data-account="personal" onclick="selectAddAccount('personal',this)">個人投資</button>
           <button class="ws-acc-btn"         data-account="music"    onclick="selectAddAccount('music',this)">音樂投資</button>
           <button class="ws-acc-btn"         data-account="eng"      onclick="selectAddAccount('eng',this)">工程投資</button>
+          <button class="ws-acc-btn"         data-account="holdings" onclick="selectAddAccount('holdings',this)">持股</button>
         </div>
       </div>
       <div class="ws-field">
@@ -885,6 +886,7 @@ input[type=date].ws-input,input[type=number].ws-input{color:var(--text)}
         <div class="seg" id="add-type-seg" style="margin-bottom:0">
           <button class="seg-btn on" onclick="selectAddType('spend',this)">支出</button>
           <button class="seg-btn"    onclick="selectAddType('wish',this)">願望</button>
+          <button class="seg-btn"    onclick="selectAddType('transfer',this)">轉帳</button>
         </div>
       </div>
       <div id="add-spend-fields">
@@ -910,6 +912,25 @@ input[type=date].ws-input,input[type=number].ws-input{color:var(--text)}
           <div class="ws-label">目標金額</div>
           <input type="number" inputmode="numeric" class="ws-input" id="add-wish-amt" placeholder="0">
         </div>
+      </div>
+      <div id="add-transfer-fields" style="display:none">
+        <div class="ws-field" style="margin-top:14px">
+          <div class="ws-label">轉到哪個帳戶</div>
+          <div class="ws-account-scroll" id="add-transfer-target-scroll"></div>
+        </div>
+        <div class="ws-field">
+          <div class="ws-label">日期</div>
+          <input type="date" class="ws-input" id="add-transfer-date">
+        </div>
+        <div class="ws-field">
+          <div class="ws-label">金額</div>
+          <input type="number" inputmode="numeric" class="ws-input" id="add-transfer-amt" placeholder="0">
+        </div>
+        <div class="ws-field">
+          <div class="ws-label">備註（選填）</div>
+          <input type="text" class="ws-input" id="add-transfer-note" placeholder="例：買 0050（2 張）" autocomplete="off">
+        </div>
+        <div id="add-transfer-hint" style="font-size:12px;color:var(--label);margin:2px 0 0;padding:0 2px;line-height:1.5"></div>
       </div>
       <button class="ws-confirm" onclick="confirmAdd()">確認</button>
     </div>
@@ -1364,6 +1385,7 @@ function startFirestoreSync() {
         if (d.spending) saveLocalSpending(d.spending);
         if (d.wishes)   saveLocalWishes(d.wishes);
         if (d.initBal)  saveLocalInitBalances(d.initBal);
+        if (d.transfers) saveLocalTransfers(d.transfers);
         // 本機寫入的 echo snapshot：只更新資料，不重繪 UI（已由外科手術更新完成）
         if (_recentLocalWrite) { _recentLocalWrite = false; setSyncStatus('synced'); return; }
         if(currentTab==='analysis') renderAnalysis();
@@ -1389,6 +1411,7 @@ async function pushToFirestore() {
         spending: getSpending(),
         wishes:   getWishes(),
         initBal:  getInitBalances(),
+        transfers: getTransfers(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       setSyncStatus('synced');
@@ -1679,7 +1702,7 @@ function fmtEl(el,val){animNum(el,val,fmt(val))}
 function stepHtml(n,from,to,amt,note,ok){
   return `<div class="step"><div class="step-n${ok?' ok':''}">${ok?'✓':n}</div><div class="step-body"><strong>${from}</strong><span style="color:var(--label);font-size:12px;margin:0 4px">→</span><strong>${to}</strong><div class="step-val">${fmt(amt)}</div>${note?`<div class="step-note">${note}</div>`:''}</div></div>`;
 }
-const ACC_NAMES={myway:'中信 My Way',invest:'國泰 投資帳戶',personal:'個人投資',music:'音樂投資',eng:'工程投資'};
+const ACC_NAMES={myway:'中信 My Way',invest:'國泰 投資帳戶',personal:'個人投資',music:'音樂投資',eng:'工程投資',holdings:'持股'};
 // 把一批收入算成各帳戶應有金額：一般收入走 70/30 分配，不分配收入全額進指定帳戶
 function computeAlloc(list){
   const alloc=list.filter(e=>!e.noalloc&&e.amount>0);
@@ -2082,6 +2105,7 @@ function popTotalValue(){
 const SPEND_KEY = 'spend_records_v1';
 const WISH_KEY     = 'wish_list_v1';
 const INIT_BAL_KEY = 'init_balances_v1';
+const TRANSFER_KEY = 'transfer_records_v1';
 
 const ACCOUNTS = [
   { id:'myway',    name:'中信 My Way',   icon:'', field:'myway',    accent:'var(--k900)' },
@@ -2089,6 +2113,8 @@ const ACCOUNTS = [
   { id:'personal', name:'個人投資',      icon:'', field:'personal', accent:'var(--k500)' },
   { id:'music',    name:'音樂投資',      icon:'', field:'music',    accent:'var(--k800)' },
   { id:'eng',      name:'工程投資',      icon:'', field:'eng',      accent:'#9098a4'    },
+  // 持股：不參與收入分配，只透過「轉帳」進出，餘額 = 投入成本（市值/損益交給 Investment OS）
+  { id:'holdings', name:'持股',          icon:'', field:'holdings', accent:'#2c4a7a', isHoldings:true },
 ];
 
 function getSpending(){ try{return JSON.parse(localStorage.getItem(SPEND_KEY)||'[]');}catch{return[];} }
@@ -2100,13 +2126,26 @@ function saveWishes(list){ saveLocalWishes(list); pushToFirestore(); }
 function getInitBalances(){ try{return JSON.parse(localStorage.getItem(INIT_BAL_KEY)||'{}');}catch{return{};} }
 function saveLocalInitBalances(o){ try{localStorage.setItem(INIT_BAL_KEY,JSON.stringify(o));}catch{} }
 function saveInitBalances(o){ saveLocalInitBalances(o); pushToFirestore(); }
+function getTransfers(){ try{return JSON.parse(localStorage.getItem(TRANSFER_KEY)||'[]');}catch{return[];} }
+function saveLocalTransfers(list){ try{localStorage.setItem(TRANSFER_KEY,JSON.stringify(list));}catch{} }
+function saveTransfers(list){ saveLocalTransfers(list); pushToFirestore(); }
+function deleteTransfer(id){
+  _openWalletSwipeId=null;
+  saveTransfers(getTransfers().filter(t=>t.id!==id));
+  renderWallet();   // 轉帳同時影響兩個帳戶餘額與持股明細，直接整頁重繪最穩
+}
 
 function computeBalances(){
-  const records=getRecords(), spending=getSpending(), initBals=getInitBalances();
+  const records=getRecords(), spending=getSpending(), initBals=getInitBalances(), transfers=getTransfers();
   const bal={};
   ACCOUNTS.forEach(a=>{bal[a.id]=initBals[a.id]||0;});
   records.forEach(r=>{ ACCOUNTS.forEach(a=>{bal[a.id]+=(r[a.field]||0);}); });
   spending.forEach(s=>{if(bal[s.account]!==undefined)bal[s.account]-=s.amount;});
+  // 轉帳：來源 -amount、目標 +amount（淨額為零，不影響總資產）
+  transfers.forEach(t=>{
+    if(bal[t.from]!==undefined)bal[t.from]-=t.amount;
+    if(bal[t.to]!==undefined)bal[t.to]+=t.amount;
+  });
   return bal;
 }
 
@@ -2125,18 +2164,23 @@ function closeSheet(id){
 // ── Unified add sheet ──
 let _addSheetAccount = 'myway';
 let _addSheetType    = 'spend';
+let _addTransferTarget = null;
 
 function openAddSheet(accountId){
   _addSheetAccount = accountId || 'myway';
   _addSheetType = 'spend';
+  _addTransferTarget = null;
   // reset inputs
-  ['add-spend-amt','add-spend-note','add-wish-name','add-wish-amt'].forEach(id=>{
+  ['add-spend-amt','add-spend-note','add-wish-name','add-wish-amt','add-transfer-amt','add-transfer-note'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
+  const today=new Date().toISOString().slice(0,10);
   const dateEl=document.getElementById('add-spend-date');
-  if(dateEl) dateEl.value=new Date().toISOString().slice(0,10);
+  if(dateEl) dateEl.value=today;
+  const tDateEl=document.getElementById('add-transfer-date');
+  if(tDateEl) tDateEl.value=today;
   // sync account chips
-  document.querySelectorAll('.ws-acc-btn').forEach(b=>{
+  document.querySelectorAll('#add-account-scroll .ws-acc-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.account===_addSheetAccount);
   });
   // reset type to 支出
@@ -2145,6 +2189,7 @@ function openAddSheet(accountId){
   });
   document.getElementById('add-spend-fields').style.display='';
   document.getElementById('add-wish-fields').style.display='none';
+  document.getElementById('add-transfer-fields').style.display='none';
   showSheet('add-sheet');
   setTimeout(()=>{
     initSegPill(document.getElementById('add-type-seg'));
@@ -2154,8 +2199,10 @@ function openAddSheet(accountId){
 
 function selectAddAccount(id,btn){
   _addSheetAccount=id;
-  document.querySelectorAll('.ws-acc-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#add-account-scroll .ws-acc-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  // 轉帳模式：來源換了就重建目標清單（要排除來源帳戶）
+  if(_addSheetType==='transfer') buildTransferTargetPicker();
 }
 
 function selectAddType(type,btn){
@@ -2164,6 +2211,36 @@ function selectAddType(type,btn){
   btn.classList.add('on');
   document.getElementById('add-spend-fields').style.display=type==='spend'?'':'none';
   document.getElementById('add-wish-fields').style.display=type==='wish'?'':'none';
+  document.getElementById('add-transfer-fields').style.display=type==='transfer'?'':'none';
+  if(type==='transfer') buildTransferTargetPicker();
+}
+
+// 建立「轉到哪個帳戶」按鈕（排除來源帳戶），預設選第一個
+function buildTransferTargetPicker(){
+  const wrap=document.getElementById('add-transfer-target-scroll');
+  if(!wrap)return;
+  const targets=ACCOUNTS.filter(a=>a.id!==_addSheetAccount);
+  if(!targets.some(a=>a.id===_addTransferTarget)) _addTransferTarget=targets[0]?.id||null;
+  wrap.innerHTML=targets.map(a=>{
+    const label=a.isHoldings?'持股 ▸ 買入':a.name;
+    return `<button class="ws-acc-btn${a.id===_addTransferTarget?' active':''}" data-target="${a.id}" onclick="selectTransferTarget('${a.id}',this)">${label}</button>`;
+  }).join('');
+  _updateTransferHint();
+}
+
+function selectTransferTarget(id,btn){
+  _addTransferTarget=id;
+  document.querySelectorAll('#add-transfer-target-scroll .ws-acc-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  _updateTransferHint();
+}
+
+function _updateTransferHint(){
+  const el=document.getElementById('add-transfer-hint'); if(!el)return;
+  const src=ACCOUNTS.find(a=>a.id===_addSheetAccount), tgt=ACCOUNTS.find(a=>a.id===_addTransferTarget);
+  if(tgt&&tgt.isHoldings){ el.textContent='買股票：錢從現金帳戶移到持股，總資產不變，市值損益請看 Investment OS。'; }
+  else if(src&&src.isHoldings){ el.textContent='賣股票：把投入成本轉回現金帳戶（賺賠不在此 App 計算）。'; }
+  else{ el.textContent=''; }
 }
 
 function confirmAdd(){
@@ -2176,7 +2253,7 @@ function confirmAdd(){
     const list=getSpending(); list.push(newSpend); saveSpending(list);
     closeSheet('add-sheet');
     _insertSpendItem(newSpend);
-  } else {
+  } else if(_addSheetType==='wish'){
     const name=document.getElementById('add-wish-name').value.trim();
     const amt=parseFloat(document.getElementById('add-wish-amt').value)||0;
     if(!name||amt<=0||!_addSheetAccount)return;
@@ -2184,6 +2261,16 @@ function confirmAdd(){
     const list=getWishes(); list.push(newWish); saveWishes(list);
     closeSheet('add-sheet');
     _insertWishItem(newWish);
+  } else {
+    // 轉帳
+    const amt=parseFloat(document.getElementById('add-transfer-amt').value)||0;
+    if(amt<=0||!_addSheetAccount||!_addTransferTarget||_addSheetAccount===_addTransferTarget)return;
+    const note=document.getElementById('add-transfer-note').value.trim();
+    const date=document.getElementById('add-transfer-date').value||new Date().toISOString().slice(0,10);
+    const newTransfer={id:`tf${Date.now()}`,from:_addSheetAccount,to:_addTransferTarget,amount:amt,note,date};
+    const list=getTransfers(); list.push(newTransfer); saveTransfers(list);
+    closeSheet('add-sheet');
+    renderWallet();
   }
 }
 
@@ -2473,13 +2560,15 @@ function _patchWalletNumbers(){
   const totalIncome=records.reduce((s,r)=>s+r.total,0);
   const totalSpent=spending.reduce((s,sp)=>s+sp.amount,0);
   const totalAvail=Object.values(balances).reduce((s,v)=>s+v,0);
+  const holdingsBal=balances['holdings']||0;
+  const cashAvail=totalAvail-holdingsBal;
   const thisYear=new Date().getFullYear().toString();
   const yearIncome=records.filter(r=>r.date.startsWith(thisYear)).reduce((s,r)=>s+r.total,0);
   const yearSpent=spending.filter(sp=>sp.date.startsWith(thisYear)).reduce((s,sp)=>s+sp.amount,0);
   const yearNet=yearIncome-yearSpent;
   const _sv=(id,val,cls)=>{const el=document.getElementById(id);if(!el)return;el.textContent=fmt(val);if(cls!==undefined)el.className=cls;};
-  _sv('wsm-val-total-income',totalIncome);
-  _sv('wsm-val-total-spent',totalSpent);
+  _sv('wsm-val-cash-avail',cashAvail,`wsm-val wsm-avail${cashAvail<0?' neg':''}`);
+  _sv('wsm-val-holdings',holdingsBal);
   _sv('wsm-val-total-avail',totalAvail,`wsm-val wsm-avail${totalAvail<0?' neg':''}`);
   _sv('wsm-val-year-income',yearIncome);
   _sv('wsm-val-year-spent',yearSpent);
@@ -2696,6 +2785,7 @@ function renderWallet(){
   const balances=computeBalances();
   const spending=getSpending();
   const wishes=getWishes();
+  const transfers=getTransfers();
   const el=document.getElementById('wallet-cards');
   if(!el)return;
 
@@ -2704,6 +2794,8 @@ function renderWallet(){
   const totalIncome=records.reduce((s,r)=>s+r.total,0);
   const totalSpent=spending.reduce((s,sp)=>s+sp.amount,0);
   const totalAvail=Object.values(balances).reduce((s,v)=>s+v,0);
+  const holdingsBal=balances['holdings']||0;       // 持股投入成本
+  const cashAvail=totalAvail-holdingsBal;           // 現金可用（不含持股）
   const thisYear=new Date().getFullYear().toString();
   const yearIncome=records.filter(r=>r.date.startsWith(thisYear)).reduce((s,r)=>s+r.total,0);
   const yearSpent=spending.filter(sp=>sp.date.startsWith(thisYear)).reduce((s,sp)=>s+sp.amount,0);
@@ -2717,11 +2809,11 @@ function renderWallet(){
     sumEl.innerHTML=showSummary
       ?`<div class="wallet-summary-card">
           <div style="display:flex;padding:13px 8px">
-            <div class="wsm-item"><div class="wsm-label">累計分配</div><div class="wsm-val" id="wsm-val-total-income">${fmt(totalIncome)}</div></div>
+            <div class="wsm-item"><div class="wsm-label">現金可用</div><div class="wsm-val wsm-avail${cashAvail<0?' neg':''}" id="wsm-val-cash-avail">${fmt(cashAvail)}</div></div>
             <div class="wsm-div"></div>
-            <div class="wsm-item"><div class="wsm-label">已支出</div><div class="wsm-val wsm-spend" id="wsm-val-total-spent">${fmt(totalSpent)}</div></div>
+            <div class="wsm-item"><div class="wsm-label">持股成本</div><div class="wsm-val" id="wsm-val-holdings">${fmt(holdingsBal)}</div></div>
             <div class="wsm-div"></div>
-            <div class="wsm-item"><div class="wsm-label">可用餘額</div><div class="wsm-val wsm-avail${totalAvail<0?' neg':''}" id="wsm-val-total-avail">${fmt(totalAvail)}</div></div>
+            <div class="wsm-item"><div class="wsm-label">總資產</div><div class="wsm-val wsm-avail${totalAvail<0?' neg':''}" id="wsm-val-total-avail">${fmt(totalAvail)}</div></div>
           </div>
           <div style="border-top:1px solid rgba(255,255,255,0.09);display:flex;align-items:center;padding:9px 8px;gap:4px">
             <span style="font-size:9px;font-weight:700;color:var(--k500);letter-spacing:0.4px;white-space:nowrap;padding-left:4px;margin-right:2px">${thisYear}年</span>
@@ -2807,27 +2899,85 @@ function renderWallet(){
         }).join('')
       : '<div class="wc-empty">尚無願望清單</div>';
 
+    // ── 轉帳記錄：本帳戶的轉出（紅）與轉入（綠）──
+    const accName=id=>(ACCOUNTS.find(a=>a.id===id)||{}).name||id;
+    const accTransfers=transfers.filter(t=>t.from===acc.id||t.to===acc.id).sort((a,b)=>b.date.localeCompare(a.date));
+    const transferOpen=!_walletSectionClosed.has(`${acc.id}-transfer`);
+    const transferHtml=accTransfers.length
+      ? accTransfers.map(t=>{
+          const out=t.from===acc.id;
+          const other=accName(out?t.to:t.from);
+          const label=(out?`→ ${other}`:`← ${other}`)+(t.note?`　${t.note}`:'');
+          return `
+            <div class="sp-swipe-item" id="item-${t.id}">
+              <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteTransfer('${t.id}')">刪除</button></div>
+              <div class="sp-row" id="wsr-${t.id}">
+                <div class="si-left">
+                  <div class="si-note">${label}</div>
+                  <div class="si-date">${t.date.slice(5,7)}月${t.date.slice(8,10)}日</div>
+                </div>
+                <div class="si-right">
+                  <span class="si-amt" style="color:${out?'#c0392b':'#1f9d57'}">${out?'-':'+'}${fmt(t.amount)}</span>
+                </div>
+              </div>
+            </div>`;
+        }).join('')
+      : '<div class="wc-empty">尚無轉帳記錄</div>';
+
+    // ── 持股明細：依備註（標的名）彙總投入成本，買入加、賣出減 ──
+    let holdingsHtml='';
+    if(acc.isHoldings){
+      const byName={};
+      transfers.forEach(t=>{
+        if(t.to===acc.id){const k=t.note||'未命名標的';byName[k]=(byName[k]||0)+t.amount;}
+        if(t.from===acc.id){const k=t.note||'未命名標的';byName[k]=(byName[k]||0)-t.amount;}
+      });
+      const entries=Object.entries(byName).filter(([,v])=>Math.abs(v)>0.5);
+      holdingsHtml=entries.length
+        ? entries.map(([name,cost])=>`
+            <div class="sp-row" style="cursor:default">
+              <div class="si-left"><div class="si-note">${name}</div></div>
+              <div class="si-right"><span class="si-amt" style="color:var(--text)">${fmt(cost)}</span></div>
+            </div>`).join('')
+        : '<div class="wc-empty">尚無持股，從其他帳戶用「轉帳」轉到「持股」即可買入</div>';
+    }
+
     // Achievement check for collapsed header hint
     const hasAchieved=accWishes.some(w=>bal>=w.target);
 
-    return `
-      <div class="wallet-card">
-        <div class="wc-header" onclick="toggleWalletCard('${acc.id}')">
-          <div class="wc-accent" style="background:${acc.accent}"></div>
-          <div class="wc-info">
-            <div class="wc-name">${acc.name}</div>
-            <div class="wc-bal${bal<0?' negative':''}" id="wc-bal-${acc.id}">${fmt(bal)}</div>
-            <div class="wc-achieve-hint" id="wc-achieve-hint-${acc.id}" style="display:${hasAchieved?'':'none'}"><span class="wc-achieve-dot"></span><span class="wc-achieve-label">可購買</span></div>
-          </div>
-          <div class="wc-chevron${cardOpen?' open':''}" id="wchev-${acc.id}">›</div>
-        </div>
-        <div class="wc-body${cardOpen?' open':''}" id="wcbody-${acc.id}">
-          <div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border)">
-            <span style="font-size:10px;font-weight:700;color:var(--label);letter-spacing:0.6px;text-transform:uppercase;flex:1">初始餘額</span>
+    const initRow=`<div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border)">
+            <span style="font-size:10px;font-weight:700;color:var(--label);letter-spacing:0.6px;text-transform:uppercase;flex:1">${acc.isHoldings?'已持有成本（手動調整用）':'初始餘額'}</span>
             <span style="font-size:15px;font-weight:700;color:var(--text);margin-right:12px" id="wc-init-${acc.id}">${fmt(initBals[acc.id]||0)}</span>
             <button onclick="event.stopPropagation();openSetInitBal('${acc.id}')" style="font-size:11px;font-weight:600;color:var(--text3);background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;cursor:pointer;transition:background 0.12s,transform 0.12s;-webkit-tap-highlight-color:transparent">設定</button>
-          </div>
-          <div class="wc-section">
+          </div>`;
+    const transferSection=`<div class="wc-section">
+            <div class="wc-sec-header" onclick="toggleWalletSection('${acc.id}','transfer')">
+              <span class="wc-sec-label">轉帳記錄</span>
+              <span class="wc-sec-arrow${transferOpen?' open':''}" id="wsarr-${acc.id}-transfer">›</span>
+            </div>
+            <div class="wc-sec-body${transferOpen?' open':''}" id="wsbody-${acc.id}-transfer">
+              <div class="wc-sec-content">${transferHtml}</div>
+            </div>
+          </div>`;
+
+    let bodyInner;
+    if(acc.isHoldings){
+      const holdOpen=!_walletSectionClosed.has(`${acc.id}-hold`);
+      bodyInner=initRow
+        +`<div class="wc-section">
+            <div class="wc-sec-header" onclick="toggleWalletSection('${acc.id}','hold')">
+              <span class="wc-sec-label">持股明細（投入成本）</span>
+              <span class="wc-sec-arrow${holdOpen?' open':''}" id="wsarr-${acc.id}-hold">›</span>
+            </div>
+            <div class="wc-sec-body${holdOpen?' open':''}" id="wsbody-${acc.id}-hold">
+              <div class="wc-sec-content">${holdingsHtml}</div>
+            </div>
+          </div>`
+        +transferSection
+        +`<div style="padding:12px 16px;font-size:11px;color:var(--label);line-height:1.6;border-top:1px solid var(--border)">這裡只記錄「投入了多少錢」。目前市值、報酬率、漲跌請看 <a href="https://jack72624-lab.github.io/investment-tracker/" target="_blank" rel="noopener" style="color:#2c6fd6;text-decoration:none;font-weight:600">Investment OS →</a></div>`;
+    } else {
+      bodyInner=initRow
+        +`<div class="wc-section">
             <div class="wc-sec-header" onclick="toggleWalletSection('${acc.id}','spend')">
               <span class="wc-sec-label">支出記錄</span>
               <span class="wc-sec-arrow${spendOpen?' open':''}" id="wsarr-${acc.id}-spend">›</span>
@@ -2835,8 +2985,8 @@ function renderWallet(){
             <div class="wc-sec-body${spendOpen?' open':''}" id="wsbody-${acc.id}-spend">
               <div class="wc-sec-content">${spendHtml}</div>
             </div>
-          </div>
-          <div class="wc-section">
+          </div>`
+        +`<div class="wc-section">
             <div class="wc-sec-header" onclick="toggleWalletSection('${acc.id}','wish')">
               <span class="wc-sec-label">願望清單</span>
               <span class="wc-sec-arrow${wishOpen?' open':''}" id="wsarr-${acc.id}-wish">›</span>
@@ -2844,14 +2994,29 @@ function renderWallet(){
             <div class="wc-sec-body${wishOpen?' open':''}" id="wsbody-${acc.id}-wish">
               <div class="wc-sec-content">${wishHtml}</div>
             </div>
+          </div>`
+        +transferSection;
+    }
+
+    return `
+      <div class="wallet-card">
+        <div class="wc-header" onclick="toggleWalletCard('${acc.id}')">
+          <div class="wc-accent" style="background:${acc.accent}"></div>
+          <div class="wc-info">
+            <div class="wc-name">${acc.name}${acc.isHoldings?'<span style="font-size:9px;font-weight:700;color:#fff;background:#2c4a7a;border-radius:5px;padding:2px 6px;margin-left:7px;letter-spacing:0.4px">投入成本</span>':''}</div>
+            <div class="wc-bal${bal<0?' negative':''}" id="wc-bal-${acc.id}">${fmt(bal)}</div>
+            <div class="wc-achieve-hint" id="wc-achieve-hint-${acc.id}" style="display:${hasAchieved?'':'none'}"><span class="wc-achieve-dot"></span><span class="wc-achieve-label">可購買</span></div>
           </div>
+          <div class="wc-chevron${cardOpen?' open':''}" id="wchev-${acc.id}">›</div>
         </div>
+        <div class="wc-body${cardOpen?' open':''}" id="wcbody-${acc.id}">${bodyInner}</div>
       </div>`;
   }).join('');
 
-  // Init swipe on all spend + wish items
+  // Init swipe on all spend + wish + transfer items
   spending.forEach(s=>{const item=document.getElementById(`item-${s.id}`);if(item)initWalletSwipe(item,s.id);});
   wishes.forEach(w=>{const item=document.getElementById(`item-${w.id}`);if(item)initWalletSwipe(item,w.id);});
+  transfers.forEach(t=>{const item=document.getElementById(`item-${t.id}`);if(item)initWalletSwipe(item,t.id);});
 
   // Ripple on add buttons
   el.querySelectorAll('.wc-btn-add').forEach(btn=>{
