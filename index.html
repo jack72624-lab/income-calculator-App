@@ -165,6 +165,16 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .name-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .name-row input{flex:1;border:none;border-bottom:1px solid var(--border);background:transparent;font-size:14px;font-weight:500;color:var(--text);padding:6px 2px;outline:none;transition:border-color 0.15s}
 .name-row input:focus{border-bottom-color:var(--k500)}
+/* ── 不分配 toggle ── */
+.noalloc-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:10px;cursor:pointer;user-select:none;transition:border-color 0.15s,background 0.15s}
+.noalloc-toggle.on{border-color:var(--k900);background:var(--k50)}
+.nat-label{font-size:13px;font-weight:600;color:var(--text)}
+.nat-sub{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.4}
+.switch{width:42px;height:25px;border-radius:99px;background:var(--k200);position:relative;flex:none;transition:background 0.2s}
+.switch.on{background:var(--k900)}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.25);transition:left 0.2s}
+.switch.on::after{left:20px}
+.seg-label.dest{color:var(--k700);font-weight:600}
 .name-row input::placeholder{color:var(--k200);font-weight:400}
 .name-icon{font-size:13px;flex-shrink:0}
 
@@ -752,9 +762,9 @@ input[type=date].ws-input,input[type=number].ws-input{color:var(--text)}
         </div>
         <div style="height:8px"></div>
         <div class="results-card">
-          <div class="rrow accent-ctbc"><div><div class="rl">中信 My Way</div><div class="rs" id="rs-myway">留存 70%</div></div><div class="rv" id="r-myway">—</div></div>
-          <div class="rrow accent-cathay"><div><div class="rl">國泰 投資帳戶</div><div class="rs" id="rs-invest">10%</div></div><div class="rv" id="r-invest">—</div></div>
-          <div class="rrow sub accent-sub1"><div><div class="rl">個人投資</div><div class="rs" id="rs-personal">10%</div></div><div class="rv" id="r-personal">—</div></div>
+          <div class="rrow accent-ctbc" id="row-myway"><div><div class="rl">中信 My Way</div><div class="rs" id="rs-myway">留存 70%</div></div><div class="rv" id="r-myway">—</div></div>
+          <div class="rrow accent-cathay" id="row-invest"><div><div class="rl">國泰 投資帳戶</div><div class="rs" id="rs-invest">10%</div></div><div class="rv" id="r-invest">—</div></div>
+          <div class="rrow sub accent-sub1" id="row-personal"><div><div class="rl">個人投資</div><div class="rs" id="rs-personal">10%</div></div><div class="rv" id="r-personal">—</div></div>
           <div class="rrow sub accent-mus" id="row-music" style="display:none"><div><div class="rl">音樂投資</div><div class="rs" id="rs-music">—</div></div><div class="rv" id="r-music">—</div></div>
           <div class="rrow sub accent-eng" id="row-eng" style="display:none"><div><div class="rl">工程投資</div><div class="rs" id="rs-eng">—</div></div><div class="rv" id="r-eng">—</div></div>
         </div>
@@ -1429,17 +1439,18 @@ function confirmSave() {
   // 每筆收入獨立存成一筆 record，才能個別刪除
   list.forEach((e,i)=>{
     const amt = e.amount;
+    const na = !!e.noalloc;
     records.push({
       id: `${sessionId}_${i}`,
       date: today,
       total: amt,
-      myway: amt*0.7,
-      invest:   e.type==='other' ? amt*0.15 : amt*0.1,
-      personal: e.type==='other' ? amt*0.15 : amt*0.1,
-      music: e.type==='music' ? amt*0.1 : 0,
-      eng:   e.type==='engineering' ? amt*0.1 : 0,
+      myway:    na ? (e.dest==='myway'?amt:0)    : amt*0.7,
+      invest:   na ? (e.dest==='invest'?amt:0)   : (e.type==='other' ? amt*0.15 : amt*0.1),
+      personal: na ? (e.dest==='personal'?amt:0) : (e.type==='other' ? amt*0.15 : amt*0.1),
+      music:    na ? (e.dest==='music'?amt:0)    : (e.type==='music' ? amt*0.1 : 0),
+      eng:      na ? (e.dest==='eng'?amt:0)       : (e.type==='engineering' ? amt*0.1 : 0),
       other: 0,
-      entries: [{name:e.name||'',amount:amt,type:e.type}]
+      entries: [{name:e.name||'',amount:amt,type: na?'noalloc':e.type, dest: na?e.dest:null, noalloc: na}]
     });
   });
   saveRecords(records);
@@ -1539,7 +1550,7 @@ function _renderAnalysisStatsOnly(){
     ['type-breakdown','alloc-list'].forEach(id=>document.getElementById(id).innerHTML='<div class="no-data">尚無紀錄</div>');
     return;
   }
-  const T=records.reduce((a,r)=>{const typ=r.entries&&r.entries[0]?r.entries[0].type:'other';return{total:a.total+r.total,myway:a.myway+r.myway,invest:a.invest+r.invest,personal:a.personal+r.personal,music:a.music+r.music,eng:a.eng+r.eng,other:a.other+(r.other||0),musicInc:a.musicInc+(typ==='music'?r.total:0),engInc:a.engInc+(typ==='engineering'?r.total:0),otherInc:a.otherInc+(typ==='other'?r.total:0)};},{total:0,myway:0,invest:0,personal:0,music:0,eng:0,other:0,musicInc:0,engInc:0,otherInc:0});
+  const T=records.reduce((a,r)=>{const typ=r.entries&&r.entries[0]?r.entries[0].type:'other';return{total:a.total+r.total,myway:a.myway+r.myway,invest:a.invest+r.invest,personal:a.personal+r.personal,music:a.music+r.music,eng:a.eng+r.eng,other:a.other+(r.other||0),musicInc:a.musicInc+(typ==='music'?r.total:0),engInc:a.engInc+(typ==='engineering'?r.total:0),otherInc:a.otherInc+(typ==='other'?r.total:0),noallocInc:a.noallocInc+(typ==='noalloc'?r.total:0)};},{total:0,myway:0,invest:0,personal:0,music:0,eng:0,other:0,musicInc:0,engInc:0,otherInc:0,noallocInc:0});
   const monthly=Array(12).fill(0),monthlyMusic=Array(12).fill(0),monthlyEng=Array(12).fill(0);
   records.forEach(r=>{
     const m=parseInt(r.date.slice(5,7))-1; monthly[m]+=r.total;
@@ -1565,7 +1576,7 @@ function _renderAnalysisStatsOnly(){
 // ══ Entries ══
 function addEntry() {
   const id = ++eid;
-  data[id] = { amount:0, source:'myway', type:'music', name:'' };
+  data[id] = { amount:0, source:'myway', type:'music', name:'', noalloc:false, dest:'invest' };
   const el = document.createElement('div');
   el.className='entry'; el.id=`e-${id}`;
   el.innerHTML=`
@@ -1574,19 +1585,38 @@ function addEntry() {
       <button class="btn-del" onclick="delEntry(${id})">✕</button>
     </div>
     <div class="name-row">
-      
+
       <input type="text" placeholder="名稱（選填，如：MV製作費）" oninput="setName(${id},this.value)" autocomplete="off">
     </div>
-    <div class="seg-label">收入帳戶</div>
-    <div class="seg">
-      <button class="seg-btn on" onclick="setSrc(${id},'myway',this)">中信 My Way</button>
-      <button class="seg-btn" onclick="setSrc(${id},'cathay',this)">國泰 投資帳戶</button>
+    <div class="noalloc-toggle" id="nat-${id}" onclick="toggleNoAlloc(${id})">
+      <div>
+        <div class="nat-label">此筆不分配</div>
+        <div class="nat-sub">本金回收／特別收入，全額存入單一帳戶</div>
+      </div>
+      <div class="switch" id="sw-${id}"></div>
     </div>
-    <div class="seg-label">收入類型</div>
-    <div class="seg">
-      <button class="seg-btn on" onclick="setTyp(${id},'music',this)">音樂案</button>
-      <button class="seg-btn" onclick="setTyp(${id},'engineering',this)">工程案</button>
-      <button class="seg-btn" onclick="setTyp(${id},'other',this)">其他</button>
+    <div id="alloc-fields-${id}">
+      <div class="seg-label">收入帳戶</div>
+      <div class="seg">
+        <button class="seg-btn on" onclick="setSrc(${id},'myway',this)">中信 My Way</button>
+        <button class="seg-btn" onclick="setSrc(${id},'cathay',this)">國泰 投資帳戶</button>
+      </div>
+      <div class="seg-label">收入類型</div>
+      <div class="seg">
+        <button class="seg-btn on" onclick="setTyp(${id},'music',this)">音樂案</button>
+        <button class="seg-btn" onclick="setTyp(${id},'engineering',this)">工程案</button>
+        <button class="seg-btn" onclick="setTyp(${id},'other',this)">其他</button>
+      </div>
+    </div>
+    <div id="dest-fields-${id}" style="display:none">
+      <div class="seg-label dest">存入帳戶（全額，不分配）</div>
+      <div class="seg" id="dest-seg-${id}">
+        <button class="seg-btn" onclick="setDest(${id},'myway',this)">My Way</button>
+        <button class="seg-btn on" onclick="setDest(${id},'invest',this)">投資</button>
+        <button class="seg-btn" onclick="setDest(${id},'personal',this)">個人</button>
+        <button class="seg-btn" onclick="setDest(${id},'music',this)">音樂</button>
+        <button class="seg-btn" onclick="setDest(${id},'eng',this)">工程</button>
+      </div>
     </div>
     <div class="amt-row">
       <label>金額</label>
@@ -1594,7 +1624,7 @@ function addEntry() {
       <span class="amt-unit">TWD</span>
     </div>`;
   document.getElementById('entries').appendChild(el);
-  el.querySelectorAll('.seg').forEach(seg=>initSegPill(seg));
+  el.querySelectorAll('#alloc-fields-'+id+' .seg').forEach(seg=>initSegPill(seg));
   el.querySelectorAll('.seg-btn,.btn-del').forEach(btn=>{
     btn.addEventListener('touchstart',e=>addRipple(btn,e),{passive:true});
   });
@@ -1629,6 +1659,19 @@ function setSrc(id,v,btn){data[id].source=v;btn.closest('.seg').querySelectorAll
 function setTyp(id,v,btn){data[id].type=v;btn.closest('.seg').querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');calc()}
 function setAmt(id,v){data[id].amount=parseFloat(v)||0;calc()}
 function setName(id,v){data[id].name=v.trim()}
+function setDest(id,v,btn){data[id].dest=v;btn.closest('.seg').querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');calc()}
+function toggleNoAlloc(id){
+  const on=!data[id].noalloc;
+  data[id].noalloc=on;
+  document.getElementById(`sw-${id}`).classList.toggle('on',on);
+  document.getElementById(`nat-${id}`).classList.toggle('on',on);
+  document.getElementById(`alloc-fields-${id}`).style.display=on?'none':'';
+  const dest=document.getElementById(`dest-fields-${id}`);
+  dest.style.display=on?'':'none';
+  // 不分配 seg 初始為隱藏，第一次顯示時才能正確量測滑塊寬度
+  if(on){const seg=document.getElementById(`dest-seg-${id}`);if(seg)initSegPill(seg);}
+  calc();
+}
 
 // ══ Calc ══
 function fmt(n){return '$'+Math.round(n).toLocaleString('zh-TW')}
@@ -1636,14 +1679,33 @@ function fmtEl(el,val){animNum(el,val,fmt(val))}
 function stepHtml(n,from,to,amt,note,ok){
   return `<div class="step"><div class="step-n${ok?' ok':''}">${ok?'✓':n}</div><div class="step-body"><strong>${from}</strong><span style="color:var(--label);font-size:12px;margin:0 4px">→</span><strong>${to}</strong><div class="step-val">${fmt(amt)}</div>${note?`<div class="step-note">${note}</div>`:''}</div></div>`;
 }
+const ACC_NAMES={myway:'中信 My Way',invest:'國泰 投資帳戶',personal:'個人投資',music:'音樂投資',eng:'工程投資'};
+// 把一批收入算成各帳戶應有金額：一般收入走 70/30 分配，不分配收入全額進指定帳戶
+function computeAlloc(list){
+  const alloc=list.filter(e=>!e.noalloc&&e.amount>0);
+  const na=list.filter(e=>e.noalloc&&e.amount>0);
+  const allocTotal=alloc.reduce((s,e)=>s+e.amount,0);
+  const total=list.reduce((s,e)=>s+e.amount,0);
+  const musicTotal=alloc.filter(e=>e.type==='music').reduce((s,e)=>s+e.amount,0);
+  const engTotal=alloc.filter(e=>e.type==='engineering').reduce((s,e)=>s+e.amount,0);
+  const otherTotal=alloc.filter(e=>e.type==='other').reduce((s,e)=>s+e.amount,0);
+  // 其他類型：國泰自留15% + 個人15%；音樂/工程：各10%
+  const split=(musicTotal+engTotal)*0.1+otherTotal*0.15;
+  const allocAcc={myway:allocTotal*0.7,invest:split,personal:split,music:musicTotal*0.1,eng:engTotal*0.1};
+  const naAcc={myway:0,invest:0,personal:0,music:0,eng:0};
+  na.forEach(e=>{naAcc[e.dest]=(naAcc[e.dest]||0)+e.amount;});
+  const acc={};
+  Object.keys(allocAcc).forEach(k=>acc[k]=allocAcc[k]+naAcc[k]);
+  return {alloc,na,allocTotal,total,musicTotal,engTotal,otherTotal,allocAcc,naAcc,acc};
+}
 function calc() {
   const list=Object.values(data), total=list.reduce((s,e)=>s+e.amount,0);
   const btn=document.getElementById('btn-confirm');
   if(total<=0){
     ['r-total','r-myway','r-invest','r-personal','r-music','r-eng'].forEach(id=>{const el=document.getElementById(id);el.textContent='—';el.dataset.rawVal='0';});
     document.getElementById('steps').innerHTML='<div class="hint">輸入金額後顯示</div>';
-    document.getElementById('row-music').style.display='none';
-    document.getElementById('row-eng').style.display='none';
+    ['row-music','row-eng'].forEach(id=>document.getElementById(id).style.display='none');
+    ['row-myway','row-invest','row-personal'].forEach(id=>document.getElementById(id).style.display='');
     btn.classList.remove('visible','done');
     document.getElementById('btn-copy-results').classList.remove('visible');
     return;
@@ -1651,40 +1713,53 @@ function calc() {
   btn.classList.add('visible'); btn.classList.remove('done');
   document.getElementById('btn-copy-results').classList.add('visible');
   popTotalValue();
-  const myway=total*0.7;
-  const musicTotal=list.filter(e=>e.type==='music').reduce((s,e)=>s+e.amount,0);
-  const engTotal=list.filter(e=>e.type==='engineering').reduce((s,e)=>s+e.amount,0);
-  const otherTotal=list.filter(e=>e.type==='other').reduce((s,e)=>s+e.amount,0);
-  const musicAmt=musicTotal*0.1;
-  const engAmt=engTotal*0.1;
-  // 其他類型：國泰自留15% + 個人15%；音樂/工程：各10%
-  const investAmt=(musicTotal+engTotal)*0.1+otherTotal*0.15;
-  const personalAmt=investAmt;
+  const A=computeAlloc(list);
   fmtEl(document.getElementById('r-total'),total);
-  fmtEl(document.getElementById('r-myway'),myway);
-  fmtEl(document.getElementById('r-invest'),investAmt);
-  fmtEl(document.getElementById('r-personal'),personalAmt);
-  // 動態百分比 label
-  const onlyOther=otherTotal>0&&(musicTotal+engTotal)===0;
-  const noOther=otherTotal===0;
-  document.getElementById('rs-invest').textContent=onlyOther?'其他 × 15%':noOther?'10%':'依類型';
-  document.getElementById('rs-personal').textContent=onlyOther?'其他 × 15%':noOther?'10%':'依類型';
-  const hasMus=musicAmt>0, hasEng=engAmt>0;
-  document.getElementById('row-music').style.display=hasMus?'':'none';
-  document.getElementById('row-eng').style.display=hasEng?'':'none';
-  if(hasMus){fmtEl(document.getElementById('r-music'),musicAmt);document.getElementById('rs-music').textContent=`音樂案 ${fmt(musicTotal)} × 10%`}
-  if(hasEng){fmtEl(document.getElementById('r-eng'),engAmt);document.getElementById('rs-eng').textContent=`工程案 ${fmt(engTotal)} × 10%`}
-  const outMyway=list.filter(e=>e.source==='myway').reduce((s,e)=>s+e.amount,0)*0.3;
-  const outCathay=list.filter(e=>e.source==='cathay').reduce((s,e)=>s+e.amount,0)*0.7;
-  const net=outMyway-outCathay;
+  // 動態百分比 label（分配部分）
+  const onlyOther=A.otherTotal>0&&(A.musicTotal+A.engTotal)===0;
+  const noOther=A.otherTotal===0;
+  const allocLabel={
+    myway:'留存 70%',
+    invest:onlyOther?'其他 × 15%':noOther?'10%':'依類型',
+    personal:onlyOther?'其他 × 15%':noOther?'10%':'依類型',
+    music:`音樂案 ${fmt(A.musicTotal)} × 10%`,
+    eng:`工程案 ${fmt(A.engTotal)} × 10%`,
+  };
+  // 各帳戶列（分配 + 不分配全額），金額為 0 的列隱藏
+  [['row-myway','rs-myway','r-myway','myway'],
+   ['row-invest','rs-invest','r-invest','invest'],
+   ['row-personal','rs-personal','r-personal','personal'],
+   ['row-music','rs-music','r-music','music'],
+   ['row-eng','rs-eng','r-eng','eng']].forEach(([row,rs,rv,field])=>{
+    const val=A.acc[field];
+    document.getElementById(row).style.display=val>0?'':'none';
+    if(val>0){
+      fmtEl(document.getElementById(rv),val);
+      const hasAlloc=A.allocAcc[field]>0, hasNa=A.naAcc[field]>0;
+      document.getElementById(rs).textContent=
+        hasAlloc&&hasNa ? allocLabel[field]+' ＋不分配'
+        : hasNa ? '全額存入 · 不分配'
+        : allocLabel[field];
+    }
+  });
+  // 轉帳步驟
   let steps='',n=1;
-  if(Math.abs(net)<0.5)steps+=`<div class="step"><div class="step-n ok">✓</div><div class="step-body"><strong>My Way ↔ 國泰 互相抵消</strong><div class="step-note">不需跨行轉帳</div></div></div>`;
-  else if(net>0){steps+=stepHtml(n++,'My Way','Line Pay',net,outCathay>0?'扣除國泰收入後的淨額':'');steps+=stepHtml(n++,'Line Pay','國泰投資帳戶',net,'一次轉入再分配');}
-  else{steps+=stepHtml(n++,'國泰投資帳戶','Line Pay',-net,outMyway>0?'扣除 My Way 收入後的淨額':'');steps+=stepHtml(n++,'Line Pay','My Way',-net,'轉回留存');}
-  steps+=stepHtml(n++,'國泰投資帳戶','個人投資',personalAmt,'');
-  if(hasMus)steps+=stepHtml(n++,'國泰投資帳戶','音樂投資',musicAmt,'');
-  if(hasEng)steps+=stepHtml(n++,'國泰投資帳戶','工程投資',engAmt,'');
-  steps+=`<div class="step"><div class="step-n ok">✓</div><div class="step-body"><strong>國泰投資帳戶 自留</strong><div class="step-val">${fmt(investAmt)}</div><div class="step-note">完成上方步驟後自然剩餘</div></div></div>`;
+  if(A.allocTotal>0){
+    const outMyway=A.alloc.filter(e=>e.source==='myway').reduce((s,e)=>s+e.amount,0)*0.3;
+    const outCathay=A.alloc.filter(e=>e.source==='cathay').reduce((s,e)=>s+e.amount,0)*0.7;
+    const net=outMyway-outCathay;
+    if(Math.abs(net)<0.5)steps+=`<div class="step"><div class="step-n ok">✓</div><div class="step-body"><strong>My Way ↔ 國泰 互相抵消</strong><div class="step-note">不需跨行轉帳</div></div></div>`;
+    else if(net>0){steps+=stepHtml(n++,'My Way','Line Pay',net,outCathay>0?'扣除國泰收入後的淨額':'');steps+=stepHtml(n++,'Line Pay','國泰投資帳戶',net,'一次轉入再分配');}
+    else{steps+=stepHtml(n++,'國泰投資帳戶','Line Pay',-net,outMyway>0?'扣除 My Way 收入後的淨額':'');steps+=stepHtml(n++,'Line Pay','My Way',-net,'轉回留存');}
+    steps+=stepHtml(n++,'國泰投資帳戶','個人投資',A.allocAcc.personal,'');
+    if(A.allocAcc.music>0)steps+=stepHtml(n++,'國泰投資帳戶','音樂投資',A.allocAcc.music,'');
+    if(A.allocAcc.eng>0)steps+=stepHtml(n++,'國泰投資帳戶','工程投資',A.allocAcc.eng,'');
+    steps+=`<div class="step"><div class="step-n ok">✓</div><div class="step-body"><strong>國泰投資帳戶 自留</strong><div class="step-val">${fmt(A.allocAcc.invest)}</div><div class="step-note">完成上方步驟後自然剩餘</div></div></div>`;
+  }
+  // 不分配收入：全額存入指定帳戶
+  A.na.forEach(e=>{
+    steps+=`<div class="step"><div class="step-n ok">✓</div><div class="step-body"><strong>全額存入 ${ACC_NAMES[e.dest]||e.dest}</strong><div class="step-val">${fmt(e.amount)}</div><div class="step-note">${e.name?e.name+' · ':''}此筆不分配</div></div></div>`;
+  });
   document.getElementById('steps').innerHTML=steps;
 }
 
@@ -1718,7 +1793,7 @@ function renderAnalysis(){
     ['type-breakdown','alloc-list','rec-list'].forEach(id=>document.getElementById(id).innerHTML='<div class="no-data">尚無紀錄</div>');
     return;
   }
-  const T=records.reduce((a,r)=>{const typ=r.entries&&r.entries[0]?r.entries[0].type:'other';return{total:a.total+r.total,myway:a.myway+r.myway,invest:a.invest+r.invest,personal:a.personal+r.personal,music:a.music+r.music,eng:a.eng+r.eng,other:a.other+(r.other||0),musicInc:a.musicInc+(typ==='music'?r.total:0),engInc:a.engInc+(typ==='engineering'?r.total:0),otherInc:a.otherInc+(typ==='other'?r.total:0)};},{total:0,myway:0,invest:0,personal:0,music:0,eng:0,other:0,musicInc:0,engInc:0,otherInc:0});
+  const T=records.reduce((a,r)=>{const typ=r.entries&&r.entries[0]?r.entries[0].type:'other';return{total:a.total+r.total,myway:a.myway+r.myway,invest:a.invest+r.invest,personal:a.personal+r.personal,music:a.music+r.music,eng:a.eng+r.eng,other:a.other+(r.other||0),musicInc:a.musicInc+(typ==='music'?r.total:0),engInc:a.engInc+(typ==='engineering'?r.total:0),otherInc:a.otherInc+(typ==='other'?r.total:0),noallocInc:a.noallocInc+(typ==='noalloc'?r.total:0)};},{total:0,myway:0,invest:0,personal:0,music:0,eng:0,other:0,musicInc:0,engInc:0,otherInc:0,noallocInc:0});
   const monthly=Array(12).fill(0);
   const monthlyMusic=Array(12).fill(0);
   const monthlyEng=Array(12).fill(0);
@@ -1808,7 +1883,7 @@ function renderAreaChart(monthly,monthlyMusic,monthlyEng){
   el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;overflow:visible"><defs><linearGradient id="ag-m" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--k800)" stop-opacity="0.28"/><stop offset="100%" stop-color="var(--k800)" stop-opacity="0.03"/></linearGradient><linearGradient id="ag-e" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9098a4" stop-opacity="0.28"/><stop offset="100%" stop-color="#9098a4" stop-opacity="0.03"/></linearGradient></defs>${makeArea(monthlyMusic,'var(--k800)','ag-m')}${makeArea(monthlyEng,'#9098a4','ag-e')}</svg><div style="display:flex;margin-top:4px">${CHART_LBLS.map(l=>`<span style="flex:1;font-size:8px;color:var(--label);font-weight:500;text-align:center">${l}</span>`).join('')}</div>${CHART_LEGEND}`;
 }
 function renderTypeBreakdown(T){
-  const types=[{name:'音樂案',val:T.musicInc,cls:'var(--k800)'},{name:'工程案',val:T.engInc,cls:'#9098a4'},{name:'其他',val:T.otherInc,cls:'var(--k500)'}].filter(t=>t.val>0);
+  const types=[{name:'音樂案',val:T.musicInc,cls:'var(--k800)'},{name:'工程案',val:T.engInc,cls:'#9098a4'},{name:'其他',val:T.otherInc,cls:'var(--k500)'},{name:'不分配',val:T.noallocInc||0,cls:'var(--k300)'}].filter(t=>t.val>0);
   if(!types.length){document.getElementById('type-breakdown').innerHTML='<div class="no-data">尚無紀錄</div>';return;}
   const tot=types.reduce((s,t)=>s+t.val,0)||1;
   document.getElementById('type-breakdown').innerHTML=types.map(t=>{const p=Math.round(t.val/tot*100);return `<div class="type-row"><div class="type-top"><span class="type-name">${t.name}</span><span><span class="type-amt">${fmt(t.val)}</span><span class="type-pct">${p}%</span></span></div><div class="type-track"><div class="type-fill" style="width:${p}%;background:${t.cls}"></div></div></div>`;}).join('');
@@ -1823,7 +1898,7 @@ function renderRecordHistory(records){
   // Remember which date groups are currently expanded
   const prevOpen=new Set([...el.querySelectorAll('.dg-body.open')].map(b=>b.id.replace('dgb-','')));
   const sorted=[...records].sort((a,b)=>b.date.localeCompare(a.date));
-  const tLabel={music:'音樂案',engineering:'工程案',other:'其他'};
+  const tLabel={music:'音樂案',engineering:'工程案',other:'其他',noalloc:'不分配'};
   const mNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   // Group by date
   const groups={}, dateOrder=[];
@@ -1837,7 +1912,11 @@ function renderRecordHistory(records){
     const dateLabel=`${d.getFullYear()} / ${mNames[d.getMonth()]} / ${String(d.getDate()).padStart(2,'0')}`;
     const dayTotal=recs.reduce((s,r)=>s+r.total,0);
     const recHtml=recs.map(r=>{
-      const tags=(r.entries||[]).filter(e=>e.amount>0).map(e=>`<span style="display:inline-block;background:var(--k50);border:1px solid var(--border);border-radius:5px;padding:1px 7px;font-size:11px;color:var(--text3);margin:2px 2px 0 0">${e.name||tLabel[e.type]||'—'} ${fmt(e.amount)}</span>`).join('');
+      const tags=(r.entries||[]).filter(e=>e.amount>0).map(e=>{
+        const na=e.noalloc||e.type==='noalloc';
+        const badge=na?`<span style="display:inline-block;background:var(--k900);color:#f5f2ef;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:600;margin:2px 2px 0 0">不分配</span>`:'';
+        return badge+`<span style="display:inline-block;background:var(--k50);border:1px solid var(--border);border-radius:5px;padding:1px 7px;font-size:11px;color:var(--text3);margin:2px 2px 0 0">${e.name||tLabel[e.type]||'—'} ${fmt(e.amount)}</span>`;
+      }).join('');
       const firstName=r.entries&&r.entries[0]&&r.entries[0].name?r.entries[0].name:'';
       const nameHint=firstName&&recs.length>1?`<div class="dg-rec-name">${firstName}${r.entries.length>1?' 等 '+r.entries.length+' 筆':''}</div>`:'';
       return `<div class="dg-rec-item" id="item-${r.id}">
@@ -2236,6 +2315,11 @@ function confirmEditRecord(){
   }
   r.total=newTotal;
   if(r.entries&&r.entries[0])r.entries[0]={...r.entries[0],name:name||r.entries[0].name};
+  // 依 entries 重算各帳戶分配（含不分配收入），避免改金額後帳戶累計分配對不上
+  if(r.entries&&r.entries.length){
+    const B=computeAlloc(r.entries.filter(e=>e.amount>0));
+    r.myway=B.acc.myway; r.invest=B.acc.invest; r.personal=B.acc.personal; r.music=B.acc.music; r.eng=B.acc.eng; r.other=0;
+  }
   records[idx]=r;
   saveRecords(records);
   _editRecordId=null;
@@ -2779,15 +2863,12 @@ function renderWallet(){
 function copyResults(){
   const list=Object.values(data).filter(e=>e.amount>0);
   if(!list.length)return;
-  const total=list.reduce((s,e)=>s+e.amount,0);
-  const each=total*0.1;
-  const myway=total*0.7;
-  const musicAmt=list.filter(e=>e.type==='music').reduce((s,e)=>s+e.amount,0)*0.1;
-  const engAmt=list.filter(e=>e.type==='engineering').reduce((s,e)=>s+e.amount,0)*0.1;
-  let lines=['收入分配結果','─────────────',`中信 My Way：${fmt(myway)}`,`國泰 投資帳戶：${fmt(each)}`,`個人投資：${fmt(each)}`];
-  if(musicAmt>0) lines.push(`音樂投資：${fmt(musicAmt)}`);
-  if(engAmt>0)   lines.push(`工程投資：${fmt(engAmt)}`);
-  lines.push('─────────────',`總計：${fmt(total)}`);
+  const A=computeAlloc(list);
+  let lines=['收入分配結果','─────────────'];
+  [['中信 My Way','myway'],['國泰 投資帳戶','invest'],['個人投資','personal'],['音樂投資','music'],['工程投資','eng']].forEach(([name,field])=>{
+    if(A.acc[field]>0)lines.push(`${name}：${fmt(A.acc[field])}${A.naAcc[field]>0?'（含不分配）':''}`);
+  });
+  lines.push('─────────────',`總計：${fmt(A.total)}`);
   navigator.clipboard.writeText(lines.join('\n')).then(()=>{
     const btn=document.getElementById('btn-copy-results');
     const prev=btn.innerHTML;
