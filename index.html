@@ -1702,7 +1702,7 @@ function fmtEl(el,val){animNum(el,val,fmt(val))}
 function stepHtml(n,from,to,amt,note,ok){
   return `<div class="step"><div class="step-n${ok?' ok':''}">${ok?'✓':n}</div><div class="step-body"><strong>${from}</strong><span style="color:var(--label);font-size:12px;margin:0 4px">→</span><strong>${to}</strong><div class="step-val">${fmt(amt)}</div>${note?`<div class="step-note">${note}</div>`:''}</div></div>`;
 }
-const ACC_NAMES={myway:'中信 My Way',invest:'國泰 投資帳戶',personal:'個人投資',music:'音樂投資',eng:'工程投資',holdings:'持股'};
+const ACC_NAMES={myway:'中信 My Way',invest:'國泰 投資帳戶',personal:'個人投資',music:'音樂投資',eng:'工程投資',holdings:'持股',lent:'借出'};
 // 把一批收入算成各帳戶應有金額：一般收入走 70/30 分配，不分配收入全額進指定帳戶
 function computeAlloc(list){
   const alloc=list.filter(e=>!e.noalloc&&e.amount>0);
@@ -2115,6 +2115,8 @@ const ACCOUNTS = [
   { id:'eng',      name:'工程投資',      icon:'', field:'eng',      accent:'#9098a4'    },
   // 持股：不參與收入分配，只透過「轉帳」進出，餘額 = 投入成本（市值/損益交給 Investment OS）
   { id:'holdings', name:'持股',          icon:'', field:'holdings', accent:'#2c4a7a', isHoldings:true },
+  // 借出：不參與收入分配。借錢給別人＝從現金帳戶「轉帳」到「借出」；對方還錢＝在借出卡按「收回」把該筆刪掉，款項自動回原帳戶、歷史清乾淨。餘額 = 目前在外借款總額，仍算進總資產（那還是你的錢），只從「現金可用」扣掉。
+  { id:'lent',     name:'借出',          icon:'', field:'lent',     accent:'#8a6d3b', isLent:true },
 ];
 
 function getSpending(){ try{return JSON.parse(localStorage.getItem(SPEND_KEY)||'[]');}catch{return[];} }
@@ -2133,6 +2135,16 @@ function deleteTransfer(id){
   _openWalletSwipeId=null;
   saveTransfers(getTransfers().filter(t=>t.id!==id));
   renderWallet();   // 轉帳同時影響兩個帳戶餘額與持股明細，直接整頁重繪最穩
+}
+// 收回借款：直接刪掉該筆「借出」轉帳記錄 → 款項自動回原帳戶、借出歸零、歷史清乾淨（不留抵銷紀錄，符合使用者要求）
+function settleLoan(id){
+  const t=getTransfers().find(x=>x.id===id);
+  if(!t)return;
+  const who=t.note?t.note:'這筆';
+  if(!confirm(`收回 ${who} 的借款 ${fmt(t.amount)}？款項會回到原帳戶，這筆記錄會直接清除。`))return;
+  _openWalletSwipeId=null;
+  saveTransfers(getTransfers().filter(x=>x.id!==id));
+  renderWallet();
 }
 
 function computeBalances(){
@@ -2222,7 +2234,7 @@ function buildTransferTargetPicker(){
   const targets=ACCOUNTS.filter(a=>a.id!==_addSheetAccount);
   if(!targets.some(a=>a.id===_addTransferTarget)) _addTransferTarget=targets[0]?.id||null;
   wrap.innerHTML=targets.map(a=>{
-    const label=a.isHoldings?'持股 ▸ 買入':a.name;
+    const label=a.isHoldings?'持股 ▸ 買入':a.isLent?'借出 ▸ 借給別人':a.name;
     return `<button class="ws-acc-btn${a.id===_addTransferTarget?' active':''}" data-target="${a.id}" onclick="selectTransferTarget('${a.id}',this)">${label}</button>`;
   }).join('');
   _updateTransferHint();
@@ -2239,6 +2251,7 @@ function _updateTransferHint(){
   const el=document.getElementById('add-transfer-hint'); if(!el)return;
   const src=ACCOUNTS.find(a=>a.id===_addSheetAccount), tgt=ACCOUNTS.find(a=>a.id===_addTransferTarget);
   if(tgt&&tgt.isHoldings){ el.textContent='買股票：錢從現金帳戶移到持股，總資產不變，市值損益請看 Investment OS。'; }
+  else if(tgt&&tgt.isLent){ el.textContent='借給別人：錢從現金帳戶移到「借出」，總資產不變、現金可用減少。對方還錢後到「借出」卡按該筆的「收回」，款項回原帳戶、記錄清乾淨。'; }
   else if(src&&src.isHoldings){ el.textContent='賣股票：把投入成本轉回現金帳戶（賺賠不在此 App 計算）。'; }
   else{ el.textContent=''; }
 }
@@ -2561,7 +2574,8 @@ function _patchWalletNumbers(){
   const totalSpent=spending.reduce((s,sp)=>s+sp.amount,0);
   const totalAvail=Object.values(balances).reduce((s,v)=>s+v,0);
   const holdingsBal=balances['holdings']||0;
-  const cashAvail=totalAvail-holdingsBal;
+  const lentBal=balances['lent']||0;
+  const cashAvail=totalAvail-holdingsBal-lentBal;
   const thisYear=new Date().getFullYear().toString();
   const yearIncome=records.filter(r=>r.date.startsWith(thisYear)).reduce((s,r)=>s+r.total,0);
   const yearSpent=spending.filter(sp=>sp.date.startsWith(thisYear)).reduce((s,sp)=>s+sp.amount,0);
@@ -2569,6 +2583,7 @@ function _patchWalletNumbers(){
   const _sv=(id,val,cls)=>{const el=document.getElementById(id);if(!el)return;el.textContent=fmt(val);if(cls!==undefined)el.className=cls;};
   _sv('wsm-val-cash-avail',cashAvail,`wsm-val wsm-avail${cashAvail<0?' neg':''}`);
   _sv('wsm-val-holdings',holdingsBal);
+  _sv('wsm-val-lent',lentBal);
   _sv('wsm-val-total-avail',totalAvail,`wsm-val wsm-avail${totalAvail<0?' neg':''}`);
   _sv('wsm-val-year-income',yearIncome);
   _sv('wsm-val-year-spent',yearSpent);
@@ -2795,7 +2810,8 @@ function renderWallet(){
   const totalSpent=spending.reduce((s,sp)=>s+sp.amount,0);
   const totalAvail=Object.values(balances).reduce((s,v)=>s+v,0);
   const holdingsBal=balances['holdings']||0;       // 持股投入成本
-  const cashAvail=totalAvail-holdingsBal;           // 現金可用（不含持股）
+  const lentBal=balances['lent']||0;                // 目前在外借款（別人欠你的）
+  const cashAvail=totalAvail-holdingsBal-lentBal;   // 現金可用（不含持股、不含借出去的）
   const thisYear=new Date().getFullYear().toString();
   const yearIncome=records.filter(r=>r.date.startsWith(thisYear)).reduce((s,r)=>s+r.total,0);
   const yearSpent=spending.filter(sp=>sp.date.startsWith(thisYear)).reduce((s,sp)=>s+sp.amount,0);
@@ -2812,6 +2828,8 @@ function renderWallet(){
             <div class="wsm-item"><div class="wsm-label">現金可用</div><div class="wsm-val wsm-avail${cashAvail<0?' neg':''}" id="wsm-val-cash-avail">${fmt(cashAvail)}</div></div>
             <div class="wsm-div"></div>
             <div class="wsm-item"><div class="wsm-label">持股成本</div><div class="wsm-val" id="wsm-val-holdings">${fmt(holdingsBal)}</div></div>
+            ${lentBal!==0?`<div class="wsm-div"></div>
+            <div class="wsm-item"><div class="wsm-label">借出在外</div><div class="wsm-val" id="wsm-val-lent" style="color:#b8863b">${fmt(lentBal)}</div></div>`:''}
             <div class="wsm-div"></div>
             <div class="wsm-item"><div class="wsm-label">總資產</div><div class="wsm-val wsm-avail${totalAvail<0?' neg':''}" id="wsm-val-total-avail">${fmt(totalAvail)}</div></div>
           </div>
@@ -2942,11 +2960,30 @@ function renderWallet(){
         : '<div class="wc-empty">尚無持股，從其他帳戶用「轉帳」轉到「持股」即可買入</div>';
     }
 
+    // ── 借出明細：每一筆在外借款一列，「收回」＝刪掉該筆、款項回原帳戶、歷史清乾淨 ──
+    let lentHtml='';
+    if(acc.isLent){
+      const loans=transfers.filter(t=>t.to===acc.id).sort((a,b)=>b.date.localeCompare(a.date));
+      lentHtml=loans.length
+        ? loans.map(t=>`
+            <div class="sp-row" style="cursor:default">
+              <div class="si-left">
+                <div class="si-note">${t.note||'未命名'}</div>
+                <div class="si-date">${t.date.slice(5,7)}月${t.date.slice(8,10)}日　從${accName(t.from)}</div>
+              </div>
+              <div class="si-right" style="display:flex;align-items:center;gap:10px">
+                <span class="si-amt" style="color:var(--text)">${fmt(t.amount)}</span>
+                <button onclick="settleLoan('${t.id}')" style="font-size:11px;font-weight:600;color:#1f9d57;background:none;border:1px solid #1f9d57;border-radius:7px;padding:4px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent">收回</button>
+              </div>
+            </div>`).join('')
+        : '<div class="wc-empty">目前沒有借出去的錢。用「＋新增 → 轉帳」把現金轉到「借出」即可記一筆。</div>';
+    }
+
     // Achievement check for collapsed header hint
     const hasAchieved=accWishes.some(w=>bal>=w.target);
 
     const initRow=`<div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border)">
-            <span style="font-size:10px;font-weight:700;color:var(--label);letter-spacing:0.6px;text-transform:uppercase;flex:1">${acc.isHoldings?'已持有成本（手動調整用）':'初始餘額'}</span>
+            <span style="font-size:10px;font-weight:700;color:var(--label);letter-spacing:0.6px;text-transform:uppercase;flex:1">${acc.isHoldings?'已持有成本（手動調整用）':acc.isLent?'目前在外借款（手動調整用）':'初始餘額'}</span>
             <span style="font-size:15px;font-weight:700;color:var(--text);margin-right:12px" id="wc-init-${acc.id}">${fmt(initBals[acc.id]||0)}</span>
             <button onclick="event.stopPropagation();openSetInitBal('${acc.id}')" style="font-size:11px;font-weight:600;color:var(--text3);background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;cursor:pointer;transition:background 0.12s,transform 0.12s;-webkit-tap-highlight-color:transparent">設定</button>
           </div>`;
@@ -2975,6 +3012,19 @@ function renderWallet(){
           </div>`
         +transferSection
         +`<div style="padding:12px 16px;font-size:11px;color:var(--label);line-height:1.6;border-top:1px solid var(--border)">這裡只記錄「投入了多少錢」。目前市值、報酬率、漲跌請看 <a href="https://jack72624-lab.github.io/investment-tracker/" target="_blank" rel="noopener" style="color:#2c6fd6;text-decoration:none;font-weight:600">Investment OS →</a></div>`;
+    } else if(acc.isLent){
+      const lentOpen=!_walletSectionClosed.has(`${acc.id}-lent`);
+      bodyInner=initRow
+        +`<div class="wc-section">
+            <div class="wc-sec-header" onclick="toggleWalletSection('${acc.id}','lent')">
+              <span class="wc-sec-label">借出明細（誰欠你）</span>
+              <span class="wc-sec-arrow${lentOpen?' open':''}" id="wsarr-${acc.id}-lent">›</span>
+            </div>
+            <div class="wc-sec-body${lentOpen?' open':''}" id="wsbody-${acc.id}-lent">
+              <div class="wc-sec-content">${lentHtml}</div>
+            </div>
+          </div>`
+        +`<div style="padding:12px 16px;font-size:11px;color:var(--label);line-height:1.6;border-top:1px solid var(--border)">「借出」的錢仍算你的總資產，只是不在「現金可用」內。對方還錢後按該筆的「收回」，款項回到原帳戶、記錄直接清除、不留歷史。</div>`;
     } else {
       bodyInner=initRow
         +`<div class="wc-section">
@@ -3003,7 +3053,7 @@ function renderWallet(){
         <div class="wc-header" onclick="toggleWalletCard('${acc.id}')">
           <div class="wc-accent" style="background:${acc.accent}"></div>
           <div class="wc-info">
-            <div class="wc-name">${acc.name}${acc.isHoldings?'<span style="font-size:9px;font-weight:700;color:#fff;background:#2c4a7a;border-radius:5px;padding:2px 6px;margin-left:7px;letter-spacing:0.4px">投入成本</span>':''}</div>
+            <div class="wc-name">${acc.name}${acc.isHoldings?'<span style="font-size:9px;font-weight:700;color:#fff;background:#2c4a7a;border-radius:5px;padding:2px 6px;margin-left:7px;letter-spacing:0.4px">投入成本</span>':''}${acc.isLent?'<span style="font-size:9px;font-weight:700;color:#fff;background:#8a6d3b;border-radius:5px;padding:2px 6px;margin-left:7px;letter-spacing:0.4px">在外借款</span>':''}</div>
             <div class="wc-bal${bal<0?' negative':''}" id="wc-bal-${acc.id}">${fmt(bal)}</div>
             <div class="wc-achieve-hint" id="wc-achieve-hint-${acc.id}" style="display:${hasAchieved?'':'none'}"><span class="wc-achieve-dot"></span><span class="wc-achieve-label">可購買</span></div>
           </div>
