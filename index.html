@@ -299,7 +299,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .dg-rec-item{position:relative;overflow:hidden}
 .dg-rec-item:not(:last-child) .rec-swipe-row{border-bottom:1px solid var(--border)}
 .rec-del-bg{position:absolute;right:0;top:0;bottom:0;width:82px;background:#dc2626;display:flex;align-items:center;justify-content:center}
-.w-edit-bg,.r-edit-bg{position:absolute;left:0;top:0;bottom:0;width:80px;background:#3b82f6;display:flex;align-items:center;justify-content:center}
+.w-edit-bg,.r-edit-bg{display:none}/* 已改為點擊列進編輯，滑動不再露出編輯鈕 */
 .w-edit-confirm,.r-edit-confirm{background:transparent;border:none;color:#fff;font-size:13px;font-weight:600;cursor:pointer;width:100%;height:100%;padding:0}
 .rec-del-confirm{color:white;font-size:13px;font-weight:700;letter-spacing:0.3px;background:none;border:none;cursor:pointer;width:100%;height:100%;padding:0}
 .rec-swipe-row{position:relative;background:var(--card);z-index:1;display:flex;align-items:center;padding:12px 16px;will-change:transform}
@@ -1484,6 +1484,7 @@ function confirmSave() {
 
 // ══ Swipe-to-delete ══
 let _openSwipeId = null;
+let _tapEditTs = 0;   // 最近一次觸控結束的時間戳；擋掉手機 touch 之後的合成 click（桌機滑鼠才走 click 進編輯）
 function closeOpenSwipe(exceptId) {
   if (_openSwipeId && _openSwipeId !== exceptId) {
     const row = document.getElementById(`swipe-row-${_openSwipeId}`);
@@ -1493,28 +1494,41 @@ function closeOpenSwipe(exceptId) {
 }
 function initSwipe(item, id) {
   const row = item.querySelector('.rec-swipe-row');
-  let startX, curX=0, isDragging=false, totalMove=0;
+  if(!row||item._recSwipeInit)return;
+  item._recSwipeInit=true;
+  let startX, startY, curX=0, isDragging=false, moved=false;
   item.addEventListener('touchstart', e=>{
-    startX=e.touches[0].clientX; isDragging=true; totalMove=0;
+    startX=e.touches[0].clientX; startY=e.touches[0].clientY; isDragging=true; moved=false;
     row.classList.remove('snapping');
     curX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
     closeOpenSwipe(id);
   },{passive:true});
   item.addEventListener('touchmove', e=>{
     if(!isDragging) return;
-    const dx=e.touches[0].clientX-startX;
-    totalMove=Math.abs(dx);
-    row.style.transform=`translateX(${Math.max(-82,Math.min(80,curX+dx))}px)`;
+    const dx=e.touches[0].clientX-startX, dy=e.touches[0].clientY-startY;
+    if(Math.abs(dx)>8||Math.abs(dy)>8)moved=true;           // 水平或垂直移動夠大 = 拖曳/捲動，不算點擊
+    row.style.transform=`translateX(${Math.max(-82,Math.min(0,curX+dx))}px)`;   // 只能左滑（右滑不再露編輯）
   },{passive:true});
   item.addEventListener('touchend', ()=>{
     if(!isDragging) return; isDragging=false;
-    const endX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
+    _tapEditTs=Date.now();
     row.classList.add('snapping');
-    // 輕點（幾乎沒有移動）且列處於滑開狀態 → 復原到中間
-    if(totalMove<8 && curX!==0){row.style.transform='translateX(0)';_openSwipeId=null;return;}
-    if(endX>40){row.style.transform='translateX(80px)';_openSwipeId=id;}
-    else if(endX<-42){row.style.transform='translateX(-82px)';_openSwipeId=id;}
-    else{row.style.transform='translateX(0)';_openSwipeId=null;}
+    if(!moved){                                             // 幾乎沒移動 = 點一下
+      row.style.transform='translateX(0)';
+      if(curX!==0){_openSwipeId=null;return;}               // 列本來就滑開 → 收回，不進編輯
+      openEditRecord(id);                                   // 點擊 → 進編輯
+      return;
+    }
+    const endX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
+    if(endX<-42){row.style.transform='translateX(-82px)';_openSwipeId=id;}  // 左滑夠多 → 露出刪除
+    else{row.style.transform='translateX(0)';_openSwipeId=null;}            // 其餘 → 收回
+  });
+  item.addEventListener('click', e=>{                       // 桌機滑鼠用（手機由 touch 處理，時間戳擋掉此處）
+    if(Date.now()-_tapEditTs<700)return;
+    if(e.target.closest('button'))return;                   // 點到按鈕不進編輯
+    const rx=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
+    if(rx!==0){row.classList.add('snapping');row.style.transform='translateX(0)';_openSwipeId=null;return;}
+    openEditRecord(id);
   });
 }
 function deleteRecord(id) {
@@ -2471,28 +2485,41 @@ function initWalletSwipe(item, id){
   const row=item.querySelector('.sp-row,.wi-row');
   if(!row||item._walletSwipeInit)return;
   item._walletSwipeInit=true;
-  let startX,curX=0,isDragging=false,totalMove=0;
+  // 依 id 前綴決定編輯動作：sp→支出、wi→願望；其他（轉帳 tf）無編輯
+  const editFn=id.slice(0,2)==='sp'?()=>openEditSpend(id):id.slice(0,2)==='wi'?()=>openEditWish(id):null;
+  let startX,startY,curX=0,isDragging=false,moved=false;
   item.addEventListener('touchstart',e=>{
-    startX=e.touches[0].clientX; isDragging=true; totalMove=0;
+    startX=e.touches[0].clientX; startY=e.touches[0].clientY; isDragging=true; moved=false;
     row.classList.remove('snapping');
     curX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
     closeOpenWalletSwipe(id);
   },{passive:true});
   item.addEventListener('touchmove',e=>{
     if(!isDragging)return;
-    const dx=e.touches[0].clientX-startX;
-    totalMove=Math.abs(dx);
-    row.style.transform=`translateX(${Math.max(-82,Math.min(80,curX+dx))}px)`;
+    const dx=e.touches[0].clientX-startX, dy=e.touches[0].clientY-startY;
+    if(Math.abs(dx)>8||Math.abs(dy)>8)moved=true;           // 水平或垂直移動夠大 = 拖曳/捲動，不算點擊
+    row.style.transform=`translateX(${Math.max(-82,Math.min(0,curX+dx))}px)`;   // 只能左滑（右滑不再露編輯）
   },{passive:true});
   item.addEventListener('touchend',()=>{
     if(!isDragging)return; isDragging=false;
-    const endX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
+    _tapEditTs=Date.now();
     row.classList.add('snapping');
-    // 輕點已滑開的列 → 復原到中間
-    if(totalMove<8 && curX!==0){row.style.transform='translateX(0)';_openWalletSwipeId=null;return;}
-    if(endX>40){row.style.transform='translateX(80px)';_openWalletSwipeId=id;}
-    else if(endX<-42){row.style.transform='translateX(-82px)';_openWalletSwipeId=id;}
-    else{row.style.transform='translateX(0)';_openWalletSwipeId=null;}
+    if(!moved){                                             // 幾乎沒移動 = 點一下
+      row.style.transform='translateX(0)';
+      if(curX!==0){_openWalletSwipeId=null;return;}         // 列本來就滑開 → 收回，不進編輯
+      if(editFn)editFn();                                   // 點擊 → 進編輯
+      return;
+    }
+    const endX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
+    if(endX<-42){row.style.transform='translateX(-82px)';_openWalletSwipeId=id;}  // 左滑夠多 → 露出刪除
+    else{row.style.transform='translateX(0)';_openWalletSwipeId=null;}            // 其餘 → 收回
+  });
+  item.addEventListener('click',e=>{                        // 桌機滑鼠用（手機由 touch 處理，時間戳擋掉此處）
+    if(Date.now()-_tapEditTs<700)return;
+    if(e.target.closest('button'))return;                   // 點到「購買/預支/刪除」等按鈕不進編輯
+    const rx=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
+    if(rx!==0){row.classList.add('snapping');row.style.transform='translateX(0)';_openWalletSwipeId=null;return;}
+    if(editFn)editFn();
   });
 }
 
