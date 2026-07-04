@@ -1030,6 +1030,30 @@ input[type=date].ws-input,input[type=number].ws-input{color:var(--text)}
   </div>
 </div>
 
+<!-- ── 收回借款 bottom sheet ── -->
+<div id="settle-loan-sheet" class="wallet-sheet gone hiding" onclick="closeSheet('settle-loan-sheet')">
+  <div class="ws-panel" onclick="event.stopPropagation()">
+    <div class="ws-nav">
+      <button class="ws-close" onclick="closeSheet('settle-loan-sheet')">取消</button>
+      <div class="ws-title" id="settle-loan-title">收回借款</div>
+      <div style="min-width:48px"></div>
+    </div>
+    <div class="ws-body">
+      <div id="settle-loan-info" style="font-size:12px;color:var(--label);margin:0 0 14px;padding:0 2px;line-height:1.6"></div>
+      <div class="ws-field">
+        <div class="ws-label">收回金額</div>
+        <input type="number" inputmode="numeric" class="ws-input" id="settle-loan-amt" placeholder="0" oninput="_updateSettleHint()">
+      </div>
+      <div class="ws-field">
+        <div class="ws-label">收到哪個帳戶</div>
+        <div class="ws-account-scroll" id="settle-loan-acc-scroll"></div>
+      </div>
+      <div id="settle-loan-hint" style="font-size:12px;color:var(--label);margin:2px 0 14px;padding:0 2px;line-height:1.6"></div>
+      <button class="ws-confirm" onclick="confirmSettleLoan()">確認收回</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── 設定初始餘額 bottom sheet ── -->
 <div id="set-init-bal-sheet" class="wallet-sheet gone hiding" onclick="closeSheet('set-init-bal-sheet')">
   <div class="ws-panel" onclick="event.stopPropagation()">
@@ -2150,14 +2174,61 @@ function deleteTransfer(id){
   saveTransfers(getTransfers().filter(t=>t.id!==id));
   renderWallet();   // 轉帳同時影響兩個帳戶餘額與持股明細，直接整頁重繪最穩
 }
-// 收回借款：直接刪掉該筆「借出」轉帳記錄 → 款項自動回原帳戶、借出歸零、歷史清乾淨（不留抵銷紀錄，符合使用者要求）
+// ── 收回借款：開 sheet 讓使用者選「收回金額 + 收到哪個帳戶」──
+let _settleLoanId=null, _settleDestAcc=null;
 function settleLoan(id){
   const t=getTransfers().find(x=>x.id===id);
   if(!t)return;
-  const who=t.note?t.note:'這筆';
-  if(!confirm(`收回 ${who} 的借款 ${fmt(t.amount)}？款項會回到原帳戶，這筆記錄會直接清除。`))return;
   _openWalletSwipeId=null;
-  saveTransfers(getTransfers().filter(x=>x.id!==id));
+  _settleLoanId=id;
+  _settleDestAcc=t.from;                               // 預設收到原借出帳戶
+  const who=t.note||'未命名';
+  const srcName=(ACCOUNTS.find(a=>a.id===t.from)||{}).name||t.from;
+  document.getElementById('settle-loan-title').textContent=`收回：${who}`;
+  document.getElementById('settle-loan-info').innerHTML=`借給 <b>${who}</b>　尚欠 <b>${fmt(t.amount)}</b><br>原從「${srcName}」借出`;
+  document.getElementById('settle-loan-amt').value=t.amount;   // 預設全額
+  buildSettleAccPicker();
+  _updateSettleHint();
+  showSheet('settle-loan-sheet');
+}
+function buildSettleAccPicker(){
+  const wrap=document.getElementById('settle-loan-acc-scroll'); if(!wrap)return;
+  const cash=ACCOUNTS.filter(a=>!a.isHoldings&&!a.isLent);     // 收現金：排除持股/借出
+  if(!cash.some(a=>a.id===_settleDestAcc)) _settleDestAcc=cash[0]?.id||null;
+  wrap.innerHTML=cash.map(a=>`<button class="ws-acc-btn${a.id===_settleDestAcc?' active':''}" data-acc="${a.id}" onclick="selectSettleAcc('${a.id}',this)">${a.name}</button>`).join('');
+}
+function selectSettleAcc(id,btn){
+  _settleDestAcc=id;
+  document.querySelectorAll('#settle-loan-acc-scroll .ws-acc-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  _updateSettleHint();
+}
+function _updateSettleHint(){
+  const el=document.getElementById('settle-loan-hint'); if(!el)return;
+  const t=getTransfers().find(x=>x.id===_settleLoanId); if(!t)return;
+  const amt=parseFloat(document.getElementById('settle-loan-amt').value)||0;
+  const full=amt>=t.amount-0.5, same=_settleDestAcc===t.from;
+  if(full&&same) el.textContent='全額收回到原帳戶：這筆借出記錄會直接清除，不留歷史。';
+  else if(same)  el.textContent='部分收回到原帳戶：借出金額會縮成剩餘尚欠，不留多餘記錄。';
+  else           el.textContent='收到不同帳戶：會保留一筆「原帳戶→收款帳戶」的轉帳，讓餘額跟現實對齊。';
+}
+function confirmSettleLoan(){
+  const t=getTransfers().find(x=>x.id===_settleLoanId);
+  if(!t)return;
+  let amt=parseFloat(document.getElementById('settle-loan-amt').value)||0;
+  if(amt<=0)return;
+  if(amt>t.amount)amt=t.amount;                         // 不能超過尚欠
+  const src=t.from, dest=_settleDestAcc||t.from, who=t.note||'';
+  const full=amt>=t.amount-0.5;
+  let list=getTransfers();
+  // 1) 減少/刪除這筆借出（等同把 amt 退回 src、尚欠減 amt）
+  if(full) list=list.filter(x=>x.id!==_settleLoanId);
+  else     list=list.map(x=>x.id===_settleLoanId?{...x,amount:x.amount-amt}:x);
+  // 2) 收款帳戶不是原帳戶 → 補一筆 src→dest，把退回 src 的錢移到實際收款帳戶（餘額才對得上）
+  if(dest!==src) list.push({id:`tf${Date.now()}`,from:src,to:dest,amount:amt,note:(who?who+' ':'')+'收回轉入',date:new Date().toISOString().slice(0,10)});
+  saveTransfers(list);
+  _settleLoanId=null; _settleDestAcc=null; _openWalletSwipeId=null;
+  closeSheet('settle-loan-sheet');
   renderWallet();
 }
 
@@ -2468,7 +2539,7 @@ function confirmSetInitBal(){
 }
 
 // ── Wallet collapse state (closed = collapsed; cards start closed) ──
-const _walletCardClosed    = new Set(['myway','invest','personal','music','eng']);
+const _walletCardClosed    = new Set(['myway','invest','personal','music','eng','holdings','lent']);
 const _walletSectionClosed = new Set();
 const _walletYearClosed    = new Set();
 let   _openWalletSwipeId   = null;
@@ -2855,11 +2926,13 @@ function renderWallet(){
             <div class="wsm-item"><div class="wsm-label">現金可用</div><div class="wsm-val wsm-avail${cashAvail<0?' neg':''}" id="wsm-val-cash-avail">${fmt(cashAvail)}</div></div>
             <div class="wsm-div"></div>
             <div class="wsm-item"><div class="wsm-label">持股成本</div><div class="wsm-val" id="wsm-val-holdings">${fmt(holdingsBal)}</div></div>
-            ${lentBal!==0?`<div class="wsm-div"></div>
-            <div class="wsm-item"><div class="wsm-label">借出在外</div><div class="wsm-val" id="wsm-val-lent" style="color:#b8863b">${fmt(lentBal)}</div></div>`:''}
             <div class="wsm-div"></div>
             <div class="wsm-item"><div class="wsm-label">總資產</div><div class="wsm-val wsm-avail${totalAvail<0?' neg':''}" id="wsm-val-total-avail">${fmt(totalAvail)}</div></div>
           </div>
+          ${lentBal!==0?`<div style="border-top:1px solid rgba(255,255,255,0.09);display:flex;align-items:center;justify-content:space-between;padding:8px 14px">
+            <span style="font-size:9px;font-weight:700;color:#c79a4b;letter-spacing:0.5px;text-transform:uppercase">借出在外（別人欠你）</span>
+            <span style="font-size:14px;font-weight:700;color:#d9a441" id="wsm-val-lent">${fmt(lentBal)}</span>
+          </div>`:''}
           <div style="border-top:1px solid rgba(255,255,255,0.09);display:flex;align-items:center;padding:9px 8px;gap:4px">
             <span style="font-size:9px;font-weight:700;color:var(--k500);letter-spacing:0.4px;white-space:nowrap;padding-left:4px;margin-right:2px">${thisYear}年</span>
             <div class="wsm-item"><div class="wsm-label" style="font-size:8px">本年收入</div><div class="wsm-val" style="font-size:13px" id="wsm-val-year-income">${fmt(yearIncome)}</div></div>
