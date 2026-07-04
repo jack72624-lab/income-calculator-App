@@ -1,4 +1,4 @@
-const CACHE = 'income-tracker-v4';
+const CACHE = 'income-tracker-v5';
 const SHELL = [
   './',
   './index.html',
