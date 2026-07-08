@@ -963,6 +963,32 @@ input[type=date].ws-input,input[type=number].ws-input{color:var(--text)}
   </div>
 </div>
 
+<!-- ── 編輯「這筆」bottom sheet（持股買賣 / 借出 / 一般轉帳共用）── -->
+<div id="edit-transfer-sheet" class="wallet-sheet gone hiding" onclick="closeSheet('edit-transfer-sheet')">
+  <div class="ws-panel" onclick="event.stopPropagation()">
+    <div class="ws-nav">
+      <button class="ws-close" onclick="closeSheet('edit-transfer-sheet')">取消</button>
+      <div class="ws-title" id="edit-transfer-title">編輯這筆</div>
+      <div style="min-width:48px"></div>
+    </div>
+    <div class="ws-body">
+      <div class="ws-field">
+        <div class="ws-label">日期</div>
+        <input type="date" class="ws-input" id="edit-transfer-date">
+      </div>
+      <div class="ws-field">
+        <div class="ws-label">金額</div>
+        <input type="number" inputmode="numeric" class="ws-input" id="edit-transfer-amt" placeholder="0">
+      </div>
+      <div class="ws-field">
+        <div class="ws-label" id="edit-transfer-note-label">備註</div>
+        <input type="text" class="ws-input" id="edit-transfer-note" placeholder="備註" autocomplete="off">
+      </div>
+      <button class="ws-confirm" onclick="confirmEditTransfer()">儲存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── 編輯願望 bottom sheet ── -->
 <div id="edit-wish-sheet" class="wallet-sheet gone hiding" onclick="closeSheet('edit-wish-sheet')">
   <div class="ws-panel" onclick="event.stopPropagation()">
@@ -2443,6 +2469,38 @@ function confirmEditSpend(){
   else _updateSpendItemInPlace(editedId);
 }
 
+// ── Edit transfer（持股買賣 / 借出 / 一般轉帳共用）──
+let _editTransferId=null;
+function openEditTransfer(id){
+  const t=getTransfers().find(x=>x.id===id);
+  if(!t)return;
+  _editTransferId=id;
+  // 依方向給對應標題與備註欄標籤（買入/賣出→標的名、借出→借給誰、其餘→備註）
+  let title='編輯轉帳', noteLabel='備註';
+  if(t.to==='holdings'){title='編輯買入'; noteLabel='標的名';}
+  else if(t.from==='holdings'){title='編輯賣出'; noteLabel='標的名';}
+  else if(t.to==='lent'){title='編輯借出'; noteLabel='借給誰';}
+  document.getElementById('edit-transfer-title').textContent=title;
+  const nl=document.getElementById('edit-transfer-note-label'); if(nl)nl.textContent=noteLabel;
+  const ni=document.getElementById('edit-transfer-note'); if(ni)ni.placeholder=noteLabel;
+  document.getElementById('edit-transfer-date').value=t.date||new Date().toISOString().slice(0,10);
+  document.getElementById('edit-transfer-amt').value=t.amount;
+  document.getElementById('edit-transfer-note').value=t.note||'';
+  showSheet('edit-transfer-sheet');
+  setTimeout(()=>document.getElementById('edit-transfer-amt').focus(),450);
+}
+function confirmEditTransfer(){
+  const amt=parseFloat(document.getElementById('edit-transfer-amt').value)||0;
+  if(amt<=0||!_editTransferId)return;
+  const note=document.getElementById('edit-transfer-note').value.trim();
+  const date=document.getElementById('edit-transfer-date').value||new Date().toISOString().slice(0,10);
+  saveTransfers(getTransfers().map(t=>t.id===_editTransferId?{...t,amount:amt,note,date}:t));
+  _editTransferId=null;
+  _openWalletSwipeId=null;
+  closeSheet('edit-transfer-sheet');
+  renderWallet();   // 轉帳同時影響兩帳戶餘額＋持股/借出彙總，整頁重繪最穩
+}
+
 // ── Edit wish ──
 let _editWishId=null;
 function openEditWish(id){
@@ -2542,6 +2600,7 @@ function confirmSetInitBal(){
 const _walletCardClosed    = new Set(['myway','invest','personal','music','eng','holdings','lent']);
 const _walletSectionClosed = new Set();
 const _walletYearClosed    = new Set();
+const _holdingsGroupClosed = new Set();   // 持股「標的分組」折疊狀態（不在集合＝展開）
 let   _openWalletSwipeId   = null;
 
 function closeOpenWalletSwipe(exceptId){
@@ -2556,11 +2615,16 @@ function initWalletSwipe(item, id){
   const row=item.querySelector('.sp-row,.wi-row');
   if(!row||item._walletSwipeInit)return;
   item._walletSwipeInit=true;
-  // 依 id 前綴決定編輯動作：sp→支出、wi→願望；其他（轉帳 tf）無編輯
-  const editFn=id.slice(0,2)==='sp'?()=>openEditSpend(id):id.slice(0,2)==='wi'?()=>openEditWish(id):null;
-  let startX,startY,curX=0,isDragging=false,moved=false;
+  // 依 id 前綴決定編輯動作：sp→支出、wi→願望、tf→轉帳、hd-/ld-→持股/借出明細（後兩者指向同一筆 transfer）
+  const realTfId=id.replace(/^(hd|ld)-/,'');
+  const editFn=id.slice(0,2)==='sp'?()=>openEditSpend(id)
+    :id.slice(0,2)==='wi'?()=>openEditWish(id)
+    :(id.slice(0,2)==='tf'||id.slice(0,3)==='hd-'||id.slice(0,3)==='ld-')?()=>openEditTransfer(realTfId)
+    :null;
+  let startX,startY,curX=0,isDragging=false,moved=false,startTarget=null;
   item.addEventListener('touchstart',e=>{
     startX=e.touches[0].clientX; startY=e.touches[0].clientY; isDragging=true; moved=false;
+    startTarget=e.target;
     row.classList.remove('snapping');
     curX=parseInt(row.style.transform.replace(/[^-0-9]/g,''))||0;
     closeOpenWalletSwipe(id);
@@ -2578,6 +2642,7 @@ function initWalletSwipe(item, id){
     if(!moved){                                             // 幾乎沒移動 = 點一下
       row.style.transform='translateX(0)';
       if(curX!==0){_openWalletSwipeId=null;return;}         // 列本來就滑開 → 收回，不進編輯
+      if(startTarget&&startTarget.closest&&startTarget.closest('button'))return;  // 點到「收回/購買」等鈕 → 不進編輯
       if(editFn)editFn();                                   // 點擊 → 進編輯
       return;
     }
@@ -2618,6 +2683,16 @@ function toggleSpendYear(key){
   const body=document.getElementById(`spygb-${key}`);
   const arr=document.getElementById(`spyarr-${key}`);
   const isOpen=!_walletYearClosed.has(key);
+  if(body){isOpen?body.classList.add('open'):body.classList.remove('open');}
+  if(arr){isOpen?arr.classList.add('open'):arr.classList.remove('open');}
+}
+
+function toggleHoldingsGroup(accId,gi){
+  const key=`${accId}-${gi}`;
+  if(_holdingsGroupClosed.has(key)){_holdingsGroupClosed.delete(key);}else{_holdingsGroupClosed.add(key);}
+  const body=document.getElementById(`hdgb-${key}`);
+  const arr=document.getElementById(`hdarr-${key}`);
+  const isOpen=!_holdingsGroupClosed.has(key);
   if(body){isOpen?body.classList.add('open'):body.classList.remove('open');}
   if(arr){isOpen?arr.classList.add('open'):arr.classList.remove('open');}
 }
@@ -3041,21 +3116,52 @@ function renderWallet(){
         }).join('')
       : '<div class="wc-empty">尚無轉帳記錄</div>';
 
-    // ── 持股明細：依備註（標的名）彙總投入成本，買入加、賣出減 ──
+    // ── 持股明細：依標的（備註）分組、可折疊；每筆買入/賣出可點擊編輯、左滑刪除，彙總即時重算 ──
     let holdingsHtml='';
     if(acc.isHoldings){
-      const byName={};
+      const groups={}, gOrder=[];
       transfers.forEach(t=>{
-        if(t.to===acc.id){const k=t.note||'未命名標的';byName[k]=(byName[k]||0)+t.amount;}
-        if(t.from===acc.id){const k=t.note||'未命名標的';byName[k]=(byName[k]||0)-t.amount;}
+        if(t.to!==acc.id&&t.from!==acc.id)return;
+        const raw=(t.note||'').trim()||'未命名標的';
+        // 正規化分組鍵：全形→半形(NFKC)＋去掉所有空白＋大小寫不敏感 → 同一家公司不因細微差異被拆成多組
+        const key=raw.normalize('NFKC').replace(/\s+/g,'').toLowerCase();
+        if(!groups[key]){groups[key]={name:raw,cost:0,items:[]};gOrder.push(key);}
+        groups[key].cost+=(t.to===acc.id?t.amount:-t.amount);   // 買入加、賣出減
+        groups[key].items.push(t);
       });
-      const entries=Object.entries(byName).filter(([,v])=>Math.abs(v)>0.5);
-      holdingsHtml=entries.length
-        ? entries.map(([name,cost])=>`
-            <div class="sp-row" style="cursor:default">
-              <div class="si-left"><div class="si-note">${name}</div></div>
-              <div class="si-right"><span class="si-amt" style="color:var(--text)">${fmt(cost)}</span></div>
-            </div>`).join('')
+      holdingsHtml=gOrder.length
+        ? gOrder.map((key,gi)=>{
+            const g=groups[key];
+            const gopen=!_holdingsGroupClosed.has(`${acc.id}-${gi}`);
+            const rows=g.items.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(t=>{
+              const isBuy=t.to===acc.id;
+              const other=accName(isBuy?t.from:t.to);
+              return `
+                <div class="sp-swipe-item" id="item-hd-${t.id}">
+                  <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteTransfer('${t.id}')">刪除</button></div>
+                  <div class="sp-row" id="wsr-hd-${t.id}">
+                    <div class="si-left">
+                      <div class="si-note">${isBuy?'買入':'賣出'}</div>
+                      <div class="si-date">${t.date.slice(5,7)}月${t.date.slice(8,10)}日　${isBuy?'從':'到'}${other}</div>
+                    </div>
+                    <div class="si-right">
+                      <span class="si-amt" style="color:${isBuy?'#1f9d57':'#c0392b'}">${isBuy?'+':'-'}${fmt(t.amount)}</span>
+                    </div>
+                  </div>
+                </div>`;
+            }).join('');
+            return `
+              <div class="wc-section">
+                <div class="wc-sec-header" onclick="toggleHoldingsGroup('${acc.id}',${gi})">
+                  <span class="wc-sec-label" style="text-transform:none;font-size:13px;font-weight:600;color:var(--text2);letter-spacing:0">${g.name}</span>
+                  <span class="si-amt" style="color:var(--text);font-weight:700">${fmt(g.cost)}</span>
+                  <span class="wc-sec-arrow${gopen?' open':''}" id="hdarr-${acc.id}-${gi}">›</span>
+                </div>
+                <div class="wc-sec-body${gopen?' open':''}" id="hdgb-${acc.id}-${gi}">
+                  <div class="wc-sec-content" style="padding:2px 16px 8px 24px">${rows}</div>
+                </div>
+              </div>`;
+          }).join('')
         : '<div class="wc-empty">尚無持股，從其他帳戶用「轉帳」轉到「持股」即可買入</div>';
     }
 
@@ -3065,14 +3171,17 @@ function renderWallet(){
       const loans=transfers.filter(t=>t.to===acc.id).sort((a,b)=>b.date.localeCompare(a.date));
       lentHtml=loans.length
         ? loans.map(t=>`
-            <div class="sp-row" style="cursor:default">
-              <div class="si-left">
-                <div class="si-note">${t.note||'未命名'}</div>
-                <div class="si-date">${t.date.slice(5,7)}月${t.date.slice(8,10)}日　從${accName(t.from)}</div>
-              </div>
-              <div class="si-right" style="display:flex;align-items:center;gap:10px">
-                <span class="si-amt" style="color:var(--text)">${fmt(t.amount)}</span>
-                <button onclick="settleLoan('${t.id}')" style="font-size:11px;font-weight:600;color:#1f9d57;background:none;border:1px solid #1f9d57;border-radius:7px;padding:4px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent">收回</button>
+            <div class="sp-swipe-item" id="item-ld-${t.id}">
+              <div class="rec-del-bg"><button class="rec-del-confirm" onclick="deleteTransfer('${t.id}')">刪除</button></div>
+              <div class="sp-row" id="wsr-ld-${t.id}">
+                <div class="si-left">
+                  <div class="si-note">${t.note||'未命名'}</div>
+                  <div class="si-date">${t.date.slice(5,7)}月${t.date.slice(8,10)}日　從${accName(t.from)}</div>
+                </div>
+                <div class="si-right" style="display:flex;align-items:center;gap:10px">
+                  <span class="si-amt" style="color:var(--text)">${fmt(t.amount)}</span>
+                  <button onclick="event.stopPropagation();settleLoan('${t.id}')" style="font-size:11px;font-weight:600;color:#1f9d57;background:none;border:1px solid #1f9d57;border-radius:7px;padding:4px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent">收回</button>
+                </div>
               </div>
             </div>`).join('')
         : '<div class="wc-empty">目前沒有借出去的錢。用「＋新增 → 轉帳」把現金轉到「借出」即可記一筆。</div>';
@@ -3106,7 +3215,7 @@ function renderWallet(){
               <span class="wc-sec-arrow${holdOpen?' open':''}" id="wsarr-${acc.id}-hold">›</span>
             </div>
             <div class="wc-sec-body${holdOpen?' open':''}" id="wsbody-${acc.id}-hold">
-              <div class="wc-sec-content">${holdingsHtml}</div>
+              <div class="wc-sec-content" style="padding:0">${holdingsHtml}</div>
             </div>
           </div>`
         +transferSection
@@ -3166,6 +3275,10 @@ function renderWallet(){
   spending.forEach(s=>{const item=document.getElementById(`item-${s.id}`);if(item)initWalletSwipe(item,s.id);});
   wishes.forEach(w=>{const item=document.getElementById(`item-${w.id}`);if(item)initWalletSwipe(item,w.id);});
   transfers.forEach(t=>{const item=document.getElementById(`item-${t.id}`);if(item)initWalletSwipe(item,t.id);});
+  transfers.forEach(t=>{
+    const hd=document.getElementById(`item-hd-${t.id}`); if(hd)initWalletSwipe(hd,`hd-${t.id}`);
+    const ld=document.getElementById(`item-ld-${t.id}`); if(ld)initWalletSwipe(ld,`ld-${t.id}`);
+  });
 
   // Ripple on add buttons
   el.querySelectorAll('.wc-btn-add').forEach(btn=>{

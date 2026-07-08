@@ -1,0 +1,15 @@
+# 此資料夾同時是 Firebase Hosting 來源 + GitHub Pages 備份站 repo。
+# GitHub Pages repo 只放「可部署的 App 檔」；Firebase 與本地文件不進 repo。
+
+# Firebase / 本地部署用
+firebase.json
+.firebaserc
+.firebase/
+node_modules/
+
+# 專案文件、公式、備份（留在本地、不上 GitHub Pages）
+*.md
+*.txt
+*.bak
+*.bak-*
+.DS_Store
